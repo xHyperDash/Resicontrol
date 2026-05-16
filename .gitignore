@@ -1,0 +1,9 @@
+backups/
+qrs/
+logs/
+*.db
+__pycache__/
+build/
+dist/
+*.spec
+.env

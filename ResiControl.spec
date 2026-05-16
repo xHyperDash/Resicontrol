@@ -1,12 +1,26 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+block_cipher = None
 
 a = Analysis(
     ['resicontrol.py'],
     pathex=[],
     binaries=[],
-    datas=[],
-    hiddenimports=[],
+    datas=[
+        ('resicontrol.db', '.'),
+        ('backups', 'backups'),
+        ('qrs', 'qrs'),
+        ('logs', 'logs'),
+    ],
+    hiddenimports=[
+        'bcrypt',
+        'schedule',
+        'PIL',
+        'PIL._imagingtk',
+        'PIL.ImageTk',
+        'customtkinter',
+        'fonttools',
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -14,12 +28,13 @@ a = Analysis(
     noarchive=False,
     optimize=0,
 )
-pyz = PYZ(a.pure)
+pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
 exe = EXE(
     pyz,
     a.scripts,
     a.binaries,
+    a.zipfiles,
     a.datas,
     [],
     name='ResiControl',
