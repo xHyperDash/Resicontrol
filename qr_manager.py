@@ -75,7 +75,7 @@ def escanear_qr(frame) -> str | None:
 
         decoded_objects = pyzbar.decode(frame)
         if decoded_objects:
-            data = decoded_objects[0].data.decode("utf-8").strip().upper()
+            data: str = decoded_objects[0].data.decode("utf-8").strip().upper()
             logger.info(f"QR escaneado: placa={data}")
             return data
     except ImportError:

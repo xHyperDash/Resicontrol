@@ -5,7 +5,7 @@ from config import MAX_LOGIN_ATTEMPTS, LOCKOUT_TIME
 from logger import logger
 
 # Almacen de intentos fallidos (para app de escritorio single-user es aceptable)
-_failed_attempts = {}
+_failed_attempts: dict[str, tuple[int, float]] = {}
 
 
 # ─── Hashing ──────────────────────────────────────────────────────────────────

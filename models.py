@@ -102,7 +102,7 @@ def crear_residente(unidad, nombre, telefono, email, placa, conn=None):
         logger.info(f"Residente creado: {nombre}")
         return True, "Residente registrado correctamente"
     except sqlite3.IntegrityError:
-        return False, f"La placa {placa} ya esta registrada"
+        return False, f"La placa {placa} ya está registrada"
     finally:
         if should_close:
             real_conn.close()
@@ -144,7 +144,7 @@ def editar_residente(rid, unidad, nombre, telefono, email, placa, conn=None):
         logger.info(f"Residente editado: id={rid}")
         return True, "Residente actualizado correctamente"
     except sqlite3.IntegrityError:
-        return False, f"La placa {placa} ya esta registrada"
+        return False, f"La placa {placa} ya está registrada"
     finally:
         if should_close:
             real_conn.close()
@@ -201,10 +201,10 @@ def registrar_salida_visitante(cedula, placa, operador, conn=None):
                 (placa.upper(),),
             ).fetchone()
         else:
-            return False, "Ingrese cedula o placa"
+            return False, "Ingrese cédula o placa"
 
         if not row:
-            return False, "No hay entrada activa para esta cedula/placa"
+            return False, "No hay entrada activa para esta cédula/placa"
 
         real_conn.execute("UPDATE accesos SET salida=? WHERE id=?", (ahora, row["id"]))
 
@@ -326,7 +326,7 @@ def asignar_parqueadero(numero, placa, operador, conn=None):
     try:
         row = real_conn.execute("SELECT estado FROM parqueaderos WHERE numero=?", (numero,)).fetchone()
         if not row or row["estado"] == "ocupado":
-            return False, "Ese parqueadero ya esta ocupado"
+            return False, "Ese parqueadero ya está ocupado"
 
         ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         real_conn.execute(

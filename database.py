@@ -4,7 +4,7 @@ from logger import logger
 
 
 def get_connection():
-    """Crea una conexion a la base de datos con configuracion optimizada."""
+    """Crea una conexión a la base de datos con configuración optimizada."""
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
@@ -100,7 +100,7 @@ def add_audit_columns(cursor: sqlite3.Cursor):
 
 
 def seed_parqueaderos(cursor: sqlite3.Cursor):
-    """Crea los parqueaderos si la tabla esta vacia."""
+    """Crea los parqueaderos si la tabla está vacía."""
     cursor.execute("SELECT COUNT(*) FROM parqueaderos")
     if cursor.fetchone()[0] == 0:
         datos = []

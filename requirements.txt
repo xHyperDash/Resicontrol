@@ -9,3 +9,4 @@ pyzbar>=0.1.9
 qrcode>=7.4
 pytest>=7.0
 pytest-cov>=4.0
+mypy>=1.0
