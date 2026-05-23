@@ -1,20 +1,15 @@
-"""
-Visitors view for ResiControl.
-
-Handles visitor registration, entry/exit tracking, and editing.
-"""
-
 import customtkinter as ctk
 import sqlite3
 
 from views.base import BaseView
-from config import COLORES, DB_PATH
-from validators import (
-    validate_required,
-    validate_cedula,
-    validate_unidad,
-    validate_placa,
-)
+from config import COLORES, FONT, DB_PATH
+from config import FORMULARIO_ENTRADA_ANCHO, BOTON_SECUNDARIO_ANCHO, DIALOGO_ENTRADA_ANCHO
+from config import LISTA_VISITANTES_ALTURA, BOTON_PEQUENO_ANCHO, BOTON_PEQUENO_ALTURA
+from config import RADIO_BOTON_PEQUENO, RADIO_PANEL, PAD_LIST_BOTTOM
+from config import PAD_CARD_X, PAD_CARD_Y, PAD_FORM_X, PAD_FORM_Y, PAD_SECTION_LABEL_X
+from config import PAD_BUTTON_GAP_X, PAD_BUTTON_ROW_Y
+from config import BUSQUEDA_ENTRADA_ANCHO
+from validators import validate_required, validate_cedula, validate_unidad, validate_placa
 from models import (
     registrar_entrada_visitante,
     registrar_salida_visitante,
@@ -34,18 +29,16 @@ class VisitorsView(BaseView):
         self._crear_vista()
 
     def _crear_vista(self):
-        """Create the visitors management interface."""
         self.label_seccion(self, "Registro de Visitantes")
         card = self.tarjeta(self)
-        card.pack(fill="both", padx=40, pady=12, expand=True)
+        card.pack(fill="both", padx=PAD_CARD_X, pady=PAD_CARD_Y, expand=True)
 
         self._crear_formulario(card)
         self._crear_tabla_activos()
 
     def _crear_formulario(self, parent):
-        """Create the visitor registration form."""
         form = ctk.CTkFrame(parent, fg_color="transparent")
-        form.pack(pady=20, padx=40, fill="x")
+        form.pack(pady=PAD_FORM_Y, padx=PAD_FORM_X, fill="x")
 
         campos = [
             ("Nombre completo *", "Ej: Carlos Perez", False),
@@ -58,26 +51,26 @@ class VisitorsView(BaseView):
             ctk.CTkLabel(
                 form,
                 text=label,
-                font=("Segoe UI", 13),
+                font=FONT["cuerpo_pequeno"],
                 text_color=COLORES["texto_2"],
             ).grid(row=i, column=0, sticky="e", padx=(0, 16), pady=8)
-            e = self.entrada(form, placeholder=hint, width=420, show="*" if oculto else "")
+            e = self.entrada(form, placeholder=hint, width=FORMULARIO_ENTRADA_ANCHO, show="*" if oculto else "")
             e.grid(row=i, column=1, pady=8, sticky="w")
             self._entradas[label] = e
 
         self._consent = ctk.CTkCheckBox(
             parent,
             text="Autorizo el tratamiento de datos personales (Ley 1581/2012)",
-            font=("Segoe UI", 12),
+            font=FONT["checkbox"],
             text_color=COLORES["texto_2"],
         )
         self._consent.pack(pady=12)
 
         fila = ctk.CTkFrame(parent, fg_color="transparent")
-        fila.pack(pady=16)
+        fila.pack(pady=PAD_BUTTON_ROW_Y)
 
-        self.boton(fila, "Registrar Entrada", self._registrar_entrada, width=220).pack(
-            side="left", padx=12
+        self.boton(fila, "Registrar Entrada", self._registrar_entrada, width=BOTON_SECUNDARIO_ANCHO).pack(
+            side="left", padx=PAD_BUTTON_GAP_X
         )
         self.boton(
             fila,
@@ -85,22 +78,21 @@ class VisitorsView(BaseView):
             self._registrar_salida,
             color=COLORES["rojo"],
             hover=COLORES["rojo_hover"],
-            width=220,
-        ).pack(side="left", padx=12)
+            width=BOTON_SECUNDARIO_ANCHO,
+        ).pack(side="left", padx=PAD_BUTTON_GAP_X)
 
     def _crear_tabla_activos(self):
-        """Create the table of active visitors."""
         ctk.CTkLabel(
             self,
             text="Visitantes actualmente dentro",
-            font=("Segoe UI", 15, "bold"),
+            font=FONT["subtitulo"],
             text_color=COLORES["texto_3"],
-        ).pack(anchor="w", padx=44, pady=(8, 4))
+        ).pack(anchor="w", padx=PAD_SECTION_LABEL_X, pady=(8, 4))
 
         lista = ctk.CTkScrollableFrame(
-            self, fg_color=COLORES["tarjeta"], corner_radius=12, height=200
+            self, fg_color=COLORES["tarjeta"], corner_radius=RADIO_PANEL, height=LISTA_VISITANTES_ALTURA
         )
-        lista.pack(fill="x", padx=40, pady=(0, 24))
+        lista.pack(fill="x", padx=PAD_CARD_X, pady=PAD_LIST_BOTTOM)
 
         encabezados = ["Nombre", "Cédula", "Placa", "Unidad", "Entrada", "Operador", "Acciones"]
         self._crear_header_tabla(lista, encabezados)
@@ -109,18 +101,18 @@ class VisitorsView(BaseView):
             self._crear_fila_tabla(lista, fila_data, i)
 
     def _crear_header_tabla(self, parent, columnas):
-        header = ctk.CTkFrame(parent, fg_color="#1e3a5f", corner_radius=0)
+        header = ctk.CTkFrame(parent, fg_color=COLORES["tabla_header"], corner_radius=0)
         header.pack(fill="x")
         for h in columnas:
             ctk.CTkLabel(
                 header,
                 text=h,
-                font=("Segoe UI", 12, "bold"),
+                font=FONT["tabla_cabecera"],
                 text_color=COLORES["texto_3"],
             ).pack(side="left", expand=True, padx=8, pady=8)
 
     def _crear_fila_tabla(self, parent, datos, indice):
-        bg = "#111827" if indice % 2 == 0 else COLORES["tarjeta"]
+        bg = COLORES["panel"] if indice % 2 == 0 else COLORES["tarjeta"]
         f = ctk.CTkFrame(parent, fg_color=bg, corner_radius=0)
         f.pack(fill="x")
 
@@ -128,24 +120,23 @@ class VisitorsView(BaseView):
             ctk.CTkLabel(
                 f,
                 text=str(datos.get(key, "—") or "—"),
-                font=("Segoe UI", 12),
+                font=FONT["tabla_dato"],
                 text_color=COLORES["texto_2"],
             ).pack(side="left", expand=True, padx=8, pady=6)
 
         ctk.CTkButton(
             f,
             text="Edit",
-            width=36,
-            height=28,
-            corner_radius=6,
+            width=BOTON_PEQUENO_ANCHO,
+            height=BOTON_PEQUENO_ALTURA,
+            corner_radius=RADIO_BOTON_PEQUENO,
             fg_color=COLORES["amarillo"],
-            hover_color="#ca8a04",
-            font=("Segoe UI", 12),
+            hover_color=COLORES["hover_amarillo"],
+            font=FONT["tabla_dato"],
             command=lambda d=datos: self._editar_dialog(d),
         ).pack(side="left", padx=4, pady=4)
 
     def _registrar_entrada(self):
-        """Handle visitor entry registration."""
         if not self._consent.get():
             self.notificar("aviso", "Atención", "Debe autorizar el tratamiento de datos")
             return
@@ -174,7 +165,6 @@ class VisitorsView(BaseView):
             self._recargar()
 
     def _registrar_salida(self):
-        """Handle visitor exit registration."""
         cedula = self._entradas["Cédula *"].get().strip()
         placa = self._entradas["Placa (opcional)"].get().strip().upper()
 
@@ -188,7 +178,6 @@ class VisitorsView(BaseView):
             self._recargar()
 
     def _editar_dialog(self, datos: dict):
-        """Show dialog to edit visitor data."""
         dialog = ctk.CTkToplevel(self.app)
         dialog.title("Editar Visitante")
         dialog.geometry("420x340")
@@ -199,7 +188,7 @@ class VisitorsView(BaseView):
         ctk.CTkLabel(
             dialog,
             text="Editar datos del visitante",
-            font=("Segoe UI", 16, "bold"),
+            font=FONT["dialogo_titulo"],
             text_color=COLORES["texto"],
         ).pack(pady=(16, 8))
 
@@ -214,10 +203,10 @@ class VisitorsView(BaseView):
 
         entradas = {}
         for i, (label, key, val) in enumerate(campos):
-            ctk.CTkLabel(frame, text=label, font=("Segoe UI", 12)).grid(
+            ctk.CTkLabel(frame, text=label, font=FONT["tabla_dato"]).grid(
                 row=i, column=0, sticky="w", pady=6
             )
-            e = self.entrada(frame, placeholder=label, width=280)
+            e = self.entrada(frame, placeholder=label, width=DIALOGO_ENTRADA_ANCHO)
             e.grid(row=i, column=1, pady=6, padx=(8, 0))
             e.insert(0, str(val))
             entradas[key] = e
@@ -248,5 +237,4 @@ class VisitorsView(BaseView):
         self.boton(dialog, "Guardar", guardar, color=COLORES["verde"]).pack(pady=16)
 
     def _recargar(self):
-        """Reload the visitors view."""
         self.app._ir_visitantes()

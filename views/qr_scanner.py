@@ -1,14 +1,9 @@
-"""
-QR Scanner view for ResiControl.
-
-Handles QR code scanning for resident identification.
-"""
-
 import customtkinter as ctk
 import sqlite3
 
 from views.base import BaseView
-from config import COLORES, DB_PATH
+from config import COLORES, FONT, DB_PATH
+from config import PAD_CARD_X, PAD_CARD_Y, BOTON_SECUNDARIO_ANCHO
 from qr_manager import escanear_qr
 
 CAMARA_DISPONIBLE = False
@@ -31,45 +26,44 @@ class QRScannerView(BaseView):
         self._crear_vista()
 
     def _crear_vista(self):
-        """Create the QR scanner view."""
         if not CAMARA_DISPONIBLE:
             self.label_seccion(self, "Escaneo QR")
             card = self.tarjeta(self)
-            card.pack(fill="both", padx=40, pady=12, expand=True)
+            card.pack(fill="both", padx=PAD_CARD_X, pady=PAD_CARD_Y, expand=True)
             ctk.CTkLabel(
                 card,
                 text="Camera libraries not installed (cv2, pyzbar)",
-                font=("Segoe UI", 14),
+                font=FONT["cuerpo"],
                 text_color=COLORES["rojo"],
             ).pack(pady=40)
             return
 
         self.label_seccion(self, "Escaneo de Placa QR")
         card = self.tarjeta(self)
-        card.pack(fill="both", padx=40, pady=12, expand=True)
+        card.pack(fill="both", padx=PAD_CARD_X, pady=PAD_CARD_Y, expand=True)
 
         self.video_label = ctk.CTkLabel(
-            card, text="Presiona 'Iniciar' para activar la cámara"
+            card, text="Presiona 'Iniciar' para activar la cámara",
+            font=FONT["cuerpo"],
         )
         self.video_label.pack(pady=20)
 
-        self.boton(card, "Iniciar escaneo", self._iniciar, width=220).pack(pady=8)
+        self.boton(card, "Iniciar escaneo", self._iniciar, width=BOTON_SECUNDARIO_ANCHO).pack(pady=8)
         self.boton(
             card,
             "Detener",
             self._detener,
             color=COLORES["rojo"],
             hover=COLORES["rojo_hover"],
-            width=220,
+            width=BOTON_SECUNDARIO_ANCHO,
         ).pack(pady=8)
 
         self.info_qr = ctk.CTkLabel(
-            card, text="", font=("Segoe UI", 14), text_color=COLORES["texto_2"]
+            card, text="", font=FONT["cuerpo"], text_color=COLORES["texto_2"]
         )
         self.info_qr.pack(pady=12)
 
     def _iniciar(self):
-        """Start QR scanning."""
         self.app.scanning = True
         self.app.cap = cv2.VideoCapture(0)
 
@@ -81,7 +75,6 @@ class QRScannerView(BaseView):
         self._leer_frame()
 
     def _leer(self):
-        """Read camera frames and process QR codes."""
         if not self.app.scanning or not self.app.cap:
             return
 
@@ -106,15 +99,12 @@ class QRScannerView(BaseView):
         self.after(15, self._leer_frame)
 
     def _leer_frame(self):
-        """Alias for _leer for compatibility."""
         self._leer()
 
     def _detener(self):
-        """Stop QR scanning."""
         self.app._detener_camara()
 
     def _mostrar_info_residente(self, placa: str):
-        """Display resident information from QR scan."""
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         row = conn.execute(

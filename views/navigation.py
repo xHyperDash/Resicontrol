@@ -1,11 +1,6 @@
-"""
-Navigation sidebar and menu management for ResiControl.
-
-Provides helper functions for creating navigation menus based on user roles.
-"""
-
 import customtkinter as ctk
-from config import COLORES
+from config import COLORES, FONT
+from icons import get_icon
 
 
 CAMARA_DISPONIBLE = False
@@ -18,33 +13,24 @@ except ImportError:
 
 
 def get_menu_items(rol: str) -> list[tuple]:
-    """
-    Get the menu items based on user role.
-
-    Args:
-        rol: User role (admin, operador, residente)
-
-    Returns:
-        List of tuples: (menu_text, icon, method_reference)
-    """
-    menu = [
-        ("Inicio", "H", "inicio"),
-        ("Visitantes", "V", "visitantes"),
-        ("Residentes", "R", "residentes"),
-        ("Parqueaderos", "P", "parqueaderos"),
-        ("Historial", "H", "historial"),
-        ("Incidentes", "I", "incidentes"),
-        ("Reportes PDF", "R", "reportes"),
+    menu: list[tuple] = [
+        ("Inicio", "inicio", "inicio"),
+        ("Visitantes", "visitantes", "visitantes"),
+        ("Residentes", "residentes", "residentes"),
+        ("Parqueaderos", "parqueaderos", "parqueaderos"),
+        ("Historial", "historial", "historial"),
+        ("Incidentes", "incidentes", "incidentes"),
+        ("Reportes PDF", "reportes", "reportes"),
     ]
 
     if rol == "admin":
-        menu.append(("Usuarios", "U", "usuarios"))
+        menu.append(("Usuarios", "usuarios", "usuarios"))
 
     if CAMARA_DISPONIBLE:
-        menu.insert(3, ("Escaneo QR", "Q", "qr"))
+        menu.insert(3, ("Escaneo QR", "escaneo", "qr"))
 
-    menu.append(("Respaldos", "B", "backups"))
-    menu.append(("Cerrar Sesión", "S", "logout"))
+    menu.append(("Respaldos", "respaldos", "backups"))
+    menu.append(("Cerrar Sesión", "cerrar_sesion", "logout"))
 
     return menu
 
@@ -53,19 +39,8 @@ def create_sidebar_menu(
     app,
     sidebar: ctk.CTkFrame,
     menu_items: list[tuple],
-) -> dict[str, ctk.CTkButton]:
-    """
-    Create the sidebar menu with buttons.
-
-    Args:
-        app: The main ResiControl application
-        sidebar: The sidebar CTkFrame
-        menu_items: List of menu items from get_menu_items
-
-    Returns:
-        Dictionary mapping menu text to buttons
-    """
-    menu_btns: dict[str, ctk.CTkButton] = {}
+) -> dict[str, dict]:
+    menu_data: dict[str, dict] = {}
 
     action_map = {
         "inicio": app._ir_inicio,
@@ -81,24 +56,61 @@ def create_sidebar_menu(
         "logout": app.mostrar_login,
     }
 
-    for texto, _, cmd_key in menu_items:
+    for texto, icono, cmd_key in menu_items:
         es_peligro = texto == "Cerrar Sesión"
-        fg = COLORES["rojo"] if es_peligro else "transparent"
-        hover = COLORES["rojo_hover"] if es_peligro else "#1f2937"
+
+        icon = get_icon(icono, size=18, color=COLORES["texto_2"])
         accion = action_map.get(cmd_key, lambda: None)
+
         btn = ctk.CTkButton(
             sidebar,
             text=f"  {texto}",
-            fg_color=fg,
-            hover_color=hover,
+            image=icon,
+            compound="left",
+            fg_color="transparent",
+            hover_color=COLORES["sidebar_hover"],
             anchor="w",
-            height=52,
-            corner_radius=0,
-            font=("Segoe UI", 13),
+            height=38,
+            corner_radius=8,
+            font=FONT["cuerpo_pequeno"],
             text_color=COLORES["texto_2"],
             command=lambda t=texto, a=accion: app._cambiar_pagina(t, a),
         )
-        btn.pack(fill="x", padx=12, pady=2)
-        menu_btns[texto] = btn
+        btn.pack(fill="x", padx=(10, 6), pady=3)
 
-    return menu_btns
+        if es_peligro:
+            btn.configure(
+                fg_color="transparent",
+                hover_color=COLORES["rojo_hover"],
+                text_color=COLORES["rojo"],
+            )
+
+        menu_data[texto] = {
+            "btn": btn,
+            "es_peligro": es_peligro,
+        }
+
+    return menu_data
+
+
+def update_active(menu_data: dict[str, dict], active_text: str | None = None) -> None:
+    for texto, data in menu_data.items():
+        btn = data["btn"]
+        es_peligro = data.get("es_peligro", False)
+        es_activo = texto == active_text
+
+        if es_peligro:
+            btn.configure(
+                fg_color="transparent",
+                text_color=COLORES["rojo"],
+            )
+        elif es_activo:
+            btn.configure(
+                fg_color=COLORES["sidebar_hover"],
+                text_color=COLORES["texto"],
+            )
+        else:
+            btn.configure(
+                fg_color="transparent",
+                text_color=COLORES["texto_2"],
+            )

@@ -1,11 +1,4 @@
 #!/usr/bin/env python3
-"""
-ResiControl - Main application window.
-
-This module contains the main ResiControl class that manages
-the application window and integrates all view modules.
-"""
-
 import customtkinter as ctk
 import sqlite3
 
@@ -16,7 +9,9 @@ try:
 except ImportError:
     pass
 
-from config import COLORES, DB_PATH
+from config import COLORES, FONT, DB_PATH
+from config import SIDEBAR_ANCHO, ENTRADA_ANCHO, ENTRADA_ALTURA, BOTON_ALTURA
+from config import RADIO_LOGIN, RADIO_ENTRADA, RADIO_BOTON, BORDE_TARJETA, SEPARADOR_ALTURA
 from auth import (
     hash_password,
     verify_password,
@@ -56,7 +51,7 @@ class ResiControl(ctk.CTk):
         self.current_page: str | None = None
         self.current_view: ctk.CTkFrame | None = None
 
-        self.cap: "cv2.VideoCapture | None" = None  # type: ignore[attr-defined]
+        self.cap: "cv2.VideoCapture | None" = None
         self.scanning: bool = False
         self.video_label: ctk.CTkLabel | None = None
 
@@ -103,9 +98,9 @@ class ResiControl(ctk.CTk):
         frame = ctk.CTkFrame(
             self,
             width=460,
-            corner_radius=20,
+            corner_radius=RADIO_LOGIN,
             fg_color=COLORES["panel"],
-            border_width=1,
+            border_width=BORDE_TARJETA,
             border_color=COLORES["borde"],
         )
         frame.pack(expand=True, fill="both", padx=420, pady=40)
@@ -113,55 +108,55 @@ class ResiControl(ctk.CTk):
         ctk.CTkLabel(
             frame,
             text="ResiControl",
-            font=("Helvetica", 38, "bold"),
-            text_color="#00aaff",
+            font=FONT["logo_grande"],
+            text_color=COLORES["acento"],
         ).pack(pady=(32, 4))
         ctk.CTkLabel(
             frame,
             text="Gestión de Seguridad Residencial",
-            font=("Segoe UI", 14),
+            font=FONT["cuerpo"],
             text_color=COLORES["texto_3"],
         ).pack()
 
         ctk.CTkLabel(
             frame,
             text="Usuario",
-            font=("Segoe UI", 13),
+            font=FONT["cuerpo_pequeno"],
             text_color=COLORES["texto_2"],
         ).pack(anchor="w", padx=40, pady=(28, 4))
         self.user_entry = ctk.CTkEntry(
             frame,
             placeholder_text="Ingrese su usuario",
-            fg_color="#111827",
+            fg_color=COLORES["panel"],
             border_color=COLORES["borde_hover"],
-            corner_radius=8,
-            height=42,
-            font=("Segoe UI", 13),
-            width=360,
+            corner_radius=RADIO_ENTRADA,
+            height=ENTRADA_ALTURA,
+            font=FONT["cuerpo_pequeno"],
+            width=ENTRADA_ANCHO,
         )
         self.user_entry.pack()
 
         ctk.CTkLabel(
             frame,
             text="Contraseña",
-            font=("Segoe UI", 13),
+            font=FONT["cuerpo_pequeno"],
             text_color=COLORES["texto_2"],
         ).pack(anchor="w", padx=40, pady=(16, 4))
         self.pwd_entry = ctk.CTkEntry(
             frame,
             placeholder_text="********",
-            fg_color="#111827",
+            fg_color=COLORES["panel"],
             border_color=COLORES["borde_hover"],
-            corner_radius=8,
-            height=42,
-            font=("Segoe UI", 13),
-            width=360,
+            corner_radius=RADIO_ENTRADA,
+            height=ENTRADA_ALTURA,
+            font=FONT["cuerpo_pequeno"],
+            width=ENTRADA_ANCHO,
             show="*",
         )
         self.pwd_entry.pack()
 
         self._fortaleza_lbl = ctk.CTkLabel(
-            frame, text="", font=("Segoe UI", 11), text_color=COLORES["texto_3"]
+            frame, text="", font=FONT["pequeno"], text_color=COLORES["texto_3"]
         )
         self._fortaleza_lbl.pack(anchor="w", padx=40)
         self.pwd_entry.bind("<KeyRelease>", self._mostrar_fortaleza)
@@ -172,15 +167,15 @@ class ResiControl(ctk.CTk):
             command=self.login,
             fg_color=COLORES["azul"],
             hover_color=COLORES["azul_hover"],
-            corner_radius=10,
-            height=46,
-            font=("Segoe UI", 13, "bold"),
-            text_color="#ffffff",
-            width=360,
+            corner_radius=RADIO_BOTON,
+            height=BOTON_ALTURA,
+            font=FONT["boton"],
+            text_color=COLORES["boton_texto"],
+            width=ENTRADA_ANCHO,
         ).pack(pady=28)
 
         self.error_lbl = ctk.CTkLabel(
-            frame, text="", text_color=COLORES["rojo"], font=("Segoe UI", 13)
+            frame, text="", text_color=COLORES["rojo"], font=FONT["cuerpo_pequeno"]
         )
         self.error_lbl.pack()
 
@@ -251,25 +246,30 @@ class ResiControl(ctk.CTk):
 
         from views.navigation import get_menu_items, create_sidebar_menu
 
-        self.sidebar = ctk.CTkFrame(self, width=260, corner_radius=0, fg_color=COLORES["panel"])
+        self.sidebar = ctk.CTkFrame(self, width=SIDEBAR_ANCHO, corner_radius=0, fg_color=COLORES["panel"])
         self.sidebar.pack(side="left", fill="y")
         self.sidebar.pack_propagate(False)
 
+        logo_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
+        logo_frame.pack(pady=(10, 0), padx=18, fill="x")
+
         ctk.CTkLabel(
-            self.sidebar,
+            logo_frame,
             text="ResiControl",
-            font=("Helvetica", 24, "bold"),
-            text_color="#00aaff",
-        ).pack(pady=(32, 4), padx=20)
-        rol_text = self.rol.upper() if self.rol else "USUARIO"
-        ctk.CTkLabel(
-            self.sidebar,
-            text=rol_text,
-            font=("Segoe UI", 11),
-            text_color=COLORES["texto_3"],
-        ).pack()
-        ctk.CTkFrame(self.sidebar, height=1, fg_color=COLORES["borde"]).pack(
-            fill="x", pady=16, padx=20
+            font=FONT["logo_sidebar"],
+            text_color=COLORES["acento"],
+        ).pack(anchor="w")
+
+        if self.rol:
+            ctk.CTkLabel(
+                logo_frame,
+                text=self.rol.upper(),
+                font=FONT["pequeno"],
+                text_color=COLORES["texto_3"],
+            ).pack(anchor="w")
+
+        ctk.CTkFrame(self.sidebar, height=SEPARADOR_ALTURA, fg_color=COLORES["borde"]).pack(
+            fill="x", pady=(5, 4), padx=16
         )
 
         self.sidebar_menu = ctk.CTkScrollableFrame(
@@ -278,14 +278,18 @@ class ResiControl(ctk.CTk):
         self.sidebar_menu.pack(fill="both", expand=True)
 
         menu = get_menu_items(self.rol or "operador")
-        self.menu_btns = create_sidebar_menu(self, self.sidebar_menu, menu)
+        self.menu_data = create_sidebar_menu(self, self.sidebar_menu, menu)
 
         self.crear_contenido()
+
+        from views.toast import ToastManager
+        self.toast = ToastManager(self.contenido)
+
         self._ir_inicio()
 
     def crear_contenido(self) -> None:
         """Create the main content area."""
-        self.contenido = ctk.CTkFrame(self, fg_color="#0f172a")
+        self.contenido = ctk.CTkFrame(self, fg_color=COLORES["fondo_contenido"])
         self.contenido.pack(side="right", fill="both", expand=True)
 
     def _cambiar_pagina(self, nombre: str, accion) -> None:
@@ -299,68 +303,49 @@ class ResiControl(ctk.CTk):
                 pass
             self.current_view = None
 
-        for t, btn in self.menu_btns.items():
-            es_peligro = t == "Cerrar Sesión"
-            btn.configure(
-                fg_color=(
-                    COLORES["rojo"]
-                    if es_peligro
-                    else "#1e293b"
-                    if t == nombre
-                    else (COLORES["rojo"] if es_peligro else "transparent")
-                )
-            )
+        from views.navigation import update_active
+        update_active(self.menu_data, nombre)
 
         self.current_page = nombre
         accion()
 
     def _ir_inicio(self) -> None:
-        """Show dashboard view."""
         from views.dashboard import DashboardView
         self.current_view = DashboardView(self.contenido, self)
 
     def _ir_visitantes(self) -> None:
-        """Show visitors view."""
         from views.visitors import VisitorsView
         self.current_view = VisitorsView(self.contenido, self)
 
     def _ir_residentes(self) -> None:
-        """Show residents view."""
         from views.residents import ResidentsView
         self.current_view = ResidentsView(self.contenido, self)
 
     def _ir_parqueaderos(self) -> None:
-        """Show parking view."""
         from views.parking import ParkingView
         self.current_view = ParkingView(self.contenido, self)
 
     def _ir_historial(self) -> None:
-        """Show history view."""
         from views.history import HistoryView
         self.current_view = HistoryView(self.contenido, self)
 
     def _ir_incidentes(self) -> None:
-        """Show incidents view."""
         from views.incidents import IncidentsView
         self.current_view = IncidentsView(self.contenido, self)
 
     def _ir_reportes(self) -> None:
-        """Show reports view."""
         from views.reports import ReportsView
         self.current_view = ReportsView(self.contenido, self)
 
     def _ir_usuarios(self) -> None:
-        """Show users view (admin only)."""
         from views.users import UsersView
         self.current_view = UsersView(self.contenido, self)
 
     def _ir_backups(self) -> None:
-        """Show backups view."""
         from views.backup import BackupView
         self.current_view = BackupView(self.contenido, self)
 
     def _ir_qr(self) -> None:
-        """Show QR scanner view."""
         from views.qr_scanner import QRScannerView
         self.current_view = QRScannerView(self.contenido, self)
 

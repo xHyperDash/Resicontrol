@@ -1,14 +1,9 @@
-"""
-Reports view for ResiControl.
-
-Handles PDF report generation.
-"""
-
 import customtkinter as ctk
 from datetime import datetime
 
 from views.base import BaseView
-from config import COLORES
+from config import COLORES, FONT
+from config import PAD_CARD_X, PAD_CARD_Y, PAD_FORM_X, PAD_FORM_Y
 from report_generator import generar_pdf
 from qr_manager import abrir_archivo as abrir_archivo_qr
 
@@ -23,22 +18,20 @@ class ReportsView(BaseView):
         self._crear_vista()
 
     def _crear_vista(self):
-        """Create the reports view."""
         self.label_seccion(self, "Generación de Reportes")
         card = self.tarjeta(self)
-        card.pack(fill="x", padx=40, pady=12)
+        card.pack(fill="x", padx=PAD_CARD_X, pady=PAD_CARD_Y)
 
         self._crear_formulario(card)
 
     def _crear_formulario(self, parent):
-        """Create the report generation form."""
         opciones = ctk.CTkFrame(parent, fg_color="transparent")
-        opciones.pack(pady=20, padx=30, fill="x")
+        opciones.pack(pady=PAD_FORM_Y, padx=30, fill="x")
 
         ctk.CTkLabel(
             opciones,
             text="Fecha inicio:",
-            font=("Segoe UI", 13),
+            font=FONT["cuerpo_pequeno"],
             text_color=COLORES["texto_2"],
         ).grid(row=0, column=0, sticky="e", padx=(0, 12), pady=8)
 
@@ -49,7 +42,7 @@ class ReportsView(BaseView):
         ctk.CTkLabel(
             opciones,
             text="Fecha fin:",
-            font=("Segoe UI", 13),
+            font=FONT["cuerpo_pequeno"],
             text_color=COLORES["texto_2"],
         ).grid(row=1, column=0, sticky="e", padx=(0, 12), pady=8)
 
@@ -60,7 +53,7 @@ class ReportsView(BaseView):
         ctk.CTkLabel(
             opciones,
             text="Tipo:",
-            font=("Segoe UI", 13),
+            font=FONT["cuerpo_pequeno"],
             text_color=COLORES["texto_2"],
         ).grid(row=2, column=0, sticky="e", padx=(0, 12), pady=8)
 
@@ -73,13 +66,12 @@ class ReportsView(BaseView):
             parent,
             "Generar PDF",
             self._generar_pdf,
-            color="#1d4ed8",
-            hover="#1e40af",
+            color=COLORES["azul_oscuro"],
+            hover=COLORES["azul_hover"],
             width=260,
-        ).pack(pady=20)
+        ).pack(pady=PAD_FORM_Y)
 
     def _generar_pdf(self):
-        """Generate PDF report."""
         fecha_ini = self._rep_fecha_ini.get().strip()
         fecha_fin = self._rep_fecha_fin.get().strip()
         tipo = self._rep_tipo.get()

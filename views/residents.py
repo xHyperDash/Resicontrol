@@ -1,27 +1,15 @@
-"""
-Residents view for ResiControl.
-
-Handles resident registration, listing, editing, and QR generation.
-"""
-
 import customtkinter as ctk
 import os
 
 from views.base import BaseView
-from config import COLORES
-from validators import (
-    validate_email,
-    validate_placa,
-    validate_phone,
-    validate_unidad,
-    validate_required,
-)
-from models import (
-    crear_residente,
-    obtener_residentes,
-    editar_residente,
-    eliminar_residente,
-)
+from config import COLORES, FONT
+from config import FORMULARIO_ENTRADA_ANCHO, BOTON_SECUNDARIO_ANCHO, DIALOGO_ENTRADA_ANCHO
+from config import BOTON_PEQUENO_ANCHO, BOTON_PEQUENO_ALTURA, BUSQUEDA_ENTRADA_ANCHO
+from config import RADIO_BOTON_PEQUENO, RADIO_PANEL, RADIO_ENTRADA, PAD_CARD_X, PAD_CARD_Y
+from config import PAD_FORM_X, PAD_FORM_Y, PAD_SECTION_LABEL_X, PAD_LIST_BOTTOM
+from config import PAD_BUTTON_GAP_X, PAD_BUTTON_ROW_Y, TAB_BOTON_ALTURA
+from validators import validate_email, validate_placa, validate_phone, validate_unidad, validate_required
+from models import crear_residente, obtener_residentes, editar_residente, eliminar_residente
 
 QR_DISPONIBLE = False
 try:
@@ -45,10 +33,9 @@ class ResidentsView(BaseView):
         self._crear_vista()
 
     def _crear_vista(self):
-        """Create the residents management interface."""
         self.label_seccion(self, "Gestión de Residentes")
         tab_frame = ctk.CTkFrame(self, fg_color="transparent")
-        tab_frame.pack(fill="x", padx=40, pady=4)
+        tab_frame.pack(fill="x", padx=PAD_CARD_X, pady=4)
         self._tab_content = ctk.CTkFrame(self, fg_color="transparent")
         self._tab_content.pack(fill="both", expand=True)
 
@@ -56,8 +43,6 @@ class ResidentsView(BaseView):
         self._mostrar_formulario()
 
     def _crear_tabs(self, parent):
-        """Create tab buttons for switching views."""
-
         def cambiar_tab(tab):
             for w in self._tab_content.winfo_children():
                 w.destroy()
@@ -73,9 +58,9 @@ class ResidentsView(BaseView):
                 parent,
                 text=nombre,
                 width=200,
-                height=40,
-                corner_radius=8,
-                font=("Segoe UI", 13),
+                height=TAB_BOTON_ALTURA,
+                corner_radius=RADIO_ENTRADA,
+                font=FONT["cuerpo_pequeno"],
                 fg_color=COLORES["tarjeta"],
                 hover_color=COLORES["borde"],
                 command=lambda k=clave: cambiar_tab(k),
@@ -84,12 +69,11 @@ class ResidentsView(BaseView):
             self._tab_btns[clave] = b
 
     def _mostrar_formulario(self):
-        """Show the new resident form."""
         card = self.tarjeta(self._tab_content)
-        card.pack(fill="x", padx=40, pady=12)
+        card.pack(fill="x", padx=PAD_CARD_X, pady=PAD_CARD_Y)
 
         form = ctk.CTkFrame(card, fg_color="transparent")
-        form.pack(pady=20, padx=40, fill="x")
+        form.pack(pady=PAD_FORM_Y, padx=PAD_FORM_X, fill="x")
 
         campos = [
             ("Unidad *", "Ej: 301"),
@@ -103,23 +87,23 @@ class ResidentsView(BaseView):
             ctk.CTkLabel(
                 form,
                 text=label,
-                font=("Segoe UI", 13),
+                font=FONT["cuerpo_pequeno"],
                 text_color=COLORES["texto_2"],
             ).grid(row=i, column=0, sticky="e", padx=(0, 16), pady=8)
-            e = self.entrada(form, placeholder=hint, width=420)
+            e = self.entrada(form, placeholder=hint, width=FORMULARIO_ENTRADA_ANCHO)
             e.grid(row=i, column=1, pady=8, sticky="w")
             self._entradas[label] = e
 
         self._consent = ctk.CTkCheckBox(
             card,
             text="Autorizo tratamiento de datos (Ley 1581/2012)",
-            font=("Segoe UI", 12),
+            font=FONT["checkbox"],
             text_color=COLORES["texto_2"],
         )
         self._consent.pack(pady=12)
 
         fila = ctk.CTkFrame(card, fg_color="transparent")
-        fila.pack(pady=16)
+        fila.pack(pady=PAD_BUTTON_ROW_Y)
 
         self.boton(
             fila,
@@ -128,7 +112,7 @@ class ResidentsView(BaseView):
             color=COLORES["verde"],
             hover=COLORES["verde_hover"],
             width=240,
-        ).pack(side="left", padx=12)
+        ).pack(side="left", padx=PAD_BUTTON_GAP_X)
 
         if QR_DISPONIBLE:
             self.boton(
@@ -136,12 +120,11 @@ class ResidentsView(BaseView):
                 "Generar QR",
                 self._generar_qr,
                 color=COLORES["amarillo"],
-                hover="#ca8a04",
+                hover=COLORES["hover_amarillo"],
                 width=180,
-            ).pack(side="left", padx=12)
+            ).pack(side="left", padx=PAD_BUTTON_GAP_X)
 
-    def _validar(self, unidad: str, nombre: str, placa: str, email: str, telefono: str) -> tuple[bool, str]:
-        """Validate resident form data."""
+    def _validar(self, unidad, nombre, placa, email, telefono):
         if not validate_unidad(unidad):
             return False, "Unidad es obligatoria"
         ok, msg = validate_required(nombre, "Nombre")
@@ -156,7 +139,6 @@ class ResidentsView(BaseView):
         return True, ""
 
     def _registrar(self):
-        """Handle resident registration."""
         if not self._consent.get():
             self.notificar("aviso", "Atención", "Debe autorizar el tratamiento de datos")
             return
@@ -178,7 +160,6 @@ class ResidentsView(BaseView):
             self.app._ir_residentes()
 
     def _generar_qr(self):
-        """Generate QR code for a license plate."""
         if not QR_DISPONIBLE:
             self.notificar("error", "No disponible", "Librería qrcode no instalada")
             return
@@ -190,44 +171,42 @@ class ResidentsView(BaseView):
         self.notificar("ok" if ok else "error", "QR" if ok else "Error", msg)
 
     def _mostrar_lista(self):
-        """Show the resident list."""
         card = self.tarjeta(self._tab_content)
-        card.pack(fill="both", padx=40, pady=12, expand=True)
+        card.pack(fill="both", padx=PAD_CARD_X, pady=PAD_CARD_Y, expand=True)
 
         buscador = ctk.CTkFrame(card, fg_color="transparent")
         buscador.pack(fill="x", padx=20, pady=12)
         ctk.CTkLabel(
             buscador,
             text="Buscar:",
-            font=("Segoe UI", 13),
+            font=FONT["cuerpo_pequeno"],
             text_color=COLORES["texto_2"],
         ).pack(side="left", padx=(0, 10))
-        self._busq = self.entrada(buscador, placeholder="Nombre, unidad o placa...", width=360)
+        self._busq = self.entrada(buscador, placeholder="Nombre, unidad o placa...", width=BUSQUEDA_ENTRADA_ANCHO)
         self._busq.pack(side="left")
         self.boton(buscador, "Buscar", self._buscar, width=120).pack(side="left", padx=10)
 
-        self._tabla = ctk.CTkScrollableFrame(card, fg_color="#111827", corner_radius=8)
+        self._tabla = ctk.CTkScrollableFrame(card, fg_color=COLORES["panel"], corner_radius=RADIO_ENTRADA)
         self._tabla.pack(fill="both", expand=True, padx=20, pady=(0, 20))
         self._renderizar_tabla()
 
-    def _renderizar_tabla(self, filtro: str = ""):
-        """Render the residents table."""
+    def _renderizar_tabla(self, filtro=""):
         for w in self._tabla.winfo_children():
             w.destroy()
 
         encabezados = ["ID", "Unidad", "Nombre", "Teléfono", "Email", "Placa", "QR", "Acciones"]
-        header = ctk.CTkFrame(self._tabla, fg_color="#1e3a5f", corner_radius=0)
+        header = ctk.CTkFrame(self._tabla, fg_color=COLORES["tabla_header"], corner_radius=0)
         header.pack(fill="x")
         for h in encabezados:
             ctk.CTkLabel(
                 header,
                 text=h,
-                font=("Segoe UI", 12, "bold"),
+                font=FONT["tabla_cabecera"],
                 text_color=COLORES["texto_3"],
             ).pack(side="left", expand=True, padx=6, pady=8)
 
         for i, row in enumerate(obtener_residentes(filtro)):
-            bg = "#111827" if i % 2 == 0 else COLORES["tarjeta"]
+            bg = COLORES["panel"] if i % 2 == 0 else COLORES["tarjeta"]
             f = ctk.CTkFrame(self._tabla, fg_color=bg, corner_radius=0)
             f.pack(fill="x")
 
@@ -235,13 +214,13 @@ class ResidentsView(BaseView):
                 val = row.get(key)
                 texto = str(val or "—")
                 ctk.CTkLabel(
-                    f, text=texto, font=("Segoe UI", 12), text_color=COLORES["texto_2"]
+                    f, text=texto, font=FONT["tabla_dato"], text_color=COLORES["texto_2"]
                 ).pack(side="left", expand=True, padx=6, pady=6)
 
             qr_path = row.get("qr_code") or ""
             qr_texto = "Si" if qr_path and os.path.exists(qr_path) else "—"
             ctk.CTkLabel(
-                f, text=qr_texto, font=("Segoe UI", 12), text_color=COLORES["texto_2"]
+                f, text=qr_texto, font=FONT["tabla_dato"], text_color=COLORES["texto_2"]
             ).pack(side="left", expand=True, padx=6, pady=6)
 
             frame_acc = ctk.CTkFrame(f, fg_color="transparent")
@@ -251,33 +230,31 @@ class ResidentsView(BaseView):
             ctk.CTkButton(
                 frame_acc,
                 text="Edit",
-                width=36,
-                height=28,
-                corner_radius=6,
+                width=BOTON_PEQUENO_ANCHO,
+                height=BOTON_PEQUENO_ALTURA,
+                corner_radius=RADIO_BOTON_PEQUENO,
                 fg_color=COLORES["azul"],
                 hover_color=COLORES["azul_hover"],
-                font=("Segoe UI", 12),
+                font=FONT["tabla_dato"],
                 command=lambda r=row: self._editar_dialog(r),
             ).pack(side="left", padx=2)
 
             ctk.CTkButton(
                 frame_acc,
                 text="Del",
-                width=36,
-                height=28,
-                corner_radius=6,
+                width=BOTON_PEQUENO_ANCHO,
+                height=BOTON_PEQUENO_ALTURA,
+                corner_radius=RADIO_BOTON_PEQUENO,
                 fg_color=COLORES["rojo"],
                 hover_color=COLORES["rojo_hover"],
-                font=("Segoe UI", 12),
+                font=FONT["tabla_dato"],
                 command=lambda i=rid: self._eliminar(i),
             ).pack(side="left", padx=2)
 
     def _buscar(self):
-        """Filter the resident list."""
         self._renderizar_tabla(self._busq.get().strip())
 
     def _editar_dialog(self, datos: dict):
-        """Show dialog to edit resident."""
         from CTkMessagebox import CTkMessagebox
 
         dialog = ctk.CTkToplevel(self.app)
@@ -290,7 +267,7 @@ class ResidentsView(BaseView):
         ctk.CTkLabel(
             dialog,
             text=f"Editar: {datos.get('nombre', '')}",
-            font=("Segoe UI", 16, "bold"),
+            font=FONT["dialogo_titulo"],
             text_color=COLORES["texto"],
         ).pack(pady=(16, 8))
 
@@ -307,10 +284,10 @@ class ResidentsView(BaseView):
 
         entradas = {}
         for i, (label, key, val_actual) in enumerate(campos_def):
-            ctk.CTkLabel(frame, text=label, font=("Segoe UI", 12)).grid(
+            ctk.CTkLabel(frame, text=label, font=FONT["tabla_dato"]).grid(
                 row=i, column=0, sticky="w", pady=6
             )
-            e = self.entrada(frame, placeholder=label, width=280)
+            e = self.entrada(frame, placeholder=label, width=DIALOGO_ENTRADA_ANCHO)
             e.grid(row=i, column=1, pady=6, padx=(8, 0))
             e.insert(0, str(val_actual))
             entradas[key] = (e, label)
@@ -334,7 +311,6 @@ class ResidentsView(BaseView):
         self.boton(dialog, "Guardar Cambios", guardar, color=COLORES["verde"]).pack(pady=16)
 
     def _eliminar(self, rid: int):
-        """Delete a resident (soft delete)."""
         from CTkMessagebox import CTkMessagebox
 
         res = CTkMessagebox(
@@ -349,5 +325,4 @@ class ResidentsView(BaseView):
             self._renderizar_tabla()
 
     def _recargar(self):
-        """Reload the residents view."""
         self.app._ir_residentes()
