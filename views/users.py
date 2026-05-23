@@ -36,35 +36,46 @@ class UsersView(BaseView):
 
         campos_usr = [("Usuario *", "Nuevo usuario"), ("Contraseña *", "Contraseña")]
 
+        # Stack input fields vertically
         for i, (lbl, hint) in enumerate(campos_usr):
             ctk.CTkLabel(
                 form,
                 text=lbl,
-                font=FONT["cuerpo_pequeno"],
+                font=FONT["pequeno_bold"],
                 text_color=COLORES["texto_2"],
-            ).grid(row=i, column=0, sticky="e", padx=(0, 16), pady=8)
+            ).grid(row=2 * i, column=0, sticky="w", pady=(8, 2))
+            
             mostrar = "*" if "Contraseña" in lbl else ""
             e = self.entrada(form, placeholder=hint, width=320, show=mostrar)
-            e.grid(row=i, column=1, sticky="w")
+            e.grid(row=2 * i + 1, column=0, sticky="w", pady=(0, 8))
             self._entradas[lbl] = e
 
         self._entradas["Contraseña *"].bind("<KeyRelease>", self._mostrar_fortaleza)
         self._fortaleza_lbl = ctk.CTkLabel(
             form, text="", font=FONT["pequeno"], text_color=COLORES["texto_3"]
         )
-        self._fortaleza_lbl.grid(row=2, column=1, sticky="w", padx=(0, 16))
+        self._fortaleza_lbl.grid(row=4, column=0, sticky="w", pady=(0, 8))
 
         ctk.CTkLabel(
             form,
             text="Rol *",
-            font=FONT["cuerpo_pequeno"],
+            font=FONT["pequeno_bold"],
             text_color=COLORES["texto_2"],
-        ).grid(row=3, column=0, sticky="e", padx=(0, 16), pady=8)
+        ).grid(row=5, column=0, sticky="w", pady=(8, 2))
 
         self._usr_rol = ctk.CTkComboBox(
-            form, values=["admin", "operador", "residente"], width=320
+            form,
+            values=["admin", "operador", "residente"],
+            width=320,
+            fg_color=COLORES["panel"],
+            border_color=COLORES["borde"],
+            button_color=COLORES["tarjeta"],
+            button_hover_color=COLORES["borde"],
+            dropdown_fg_color=COLORES["panel"],
+            dropdown_hover_color=COLORES["borde"],
+            dropdown_text_color=COLORES["texto"],
         )
-        self._usr_rol.grid(row=3, column=1, sticky="w", padx=(0, 16))
+        self._usr_rol.grid(row=6, column=0, sticky="w", pady=(0, 16))
 
         self.boton(parent, "Crear Usuario", self._crear, width=BOTON_SECUNDARIO_ANCHO).pack(pady=PAD_CARD_Y)
 
@@ -76,8 +87,15 @@ class UsersView(BaseView):
             text_color=COLORES["texto_3"],
         ).pack(anchor="w", padx=PAD_SECTION_LABEL_X, pady=(16, 4))
 
+        # Thin scrollbar styling
         lista = ctk.CTkScrollableFrame(
-            self, fg_color=COLORES["tarjeta"], corner_radius=RADIO_PANEL, height=LISTA_USUARIOS_ALTURA
+            self,
+            fg_color=COLORES["tarjeta"],
+            corner_radius=RADIO_PANEL,
+            height=LISTA_USUARIOS_ALTURA,
+            scrollbar_button_color=COLORES["borde"],
+            scrollbar_button_hover_color=COLORES["borde_hover"],
+            scrollbar_fg_color="transparent",
         )
         lista.pack(fill="x", padx=PAD_CARD_X, pady=PAD_LIST_BOTTOM)
 
@@ -94,8 +112,9 @@ class UsersView(BaseView):
 
         for i, row in enumerate(obtener_usuarios()):
             bg = COLORES["panel"] if i % 2 == 0 else COLORES["tarjeta"]
-            f = ctk.CTkFrame(lista, fg_color=bg, corner_radius=0)
-            f.pack(fill="x")
+            hover_bg = COLORES["borde"]
+            f = ctk.CTkFrame(lista, fg_color=bg, corner_radius=6)
+            f.pack(fill="x", pady=2, padx=4)
 
             for val in [row["id"], row["usuario"], row["rol"]]:
                 ctk.CTkLabel(
@@ -109,7 +128,7 @@ class UsersView(BaseView):
                 ctk.CTkButton(
                     f,
                     text="Eliminar",
-                    width=ACCION_BOTON_ANCHO,
+                    width=ACCION_BOTON_ANCHO + 14,
                     height=BOTON_PEQUENO_ALTURA,
                     fg_color=COLORES["rojo"],
                     hover_color=COLORES["rojo_hover"],
@@ -117,6 +136,23 @@ class UsersView(BaseView):
                     corner_radius=RADIO_BOTON_PEQUENO,
                     command=lambda uid=row["id"]: self._eliminar(uid),
                 ).pack(side="left", padx=8)
+
+            # High fidelity row hover binders
+            def make_hover(row_frame, normal, hover):
+                def enter(e):
+                    if row_frame.winfo_exists():
+                        row_frame.configure(fg_color=hover)
+                def leave(e):
+                    if row_frame.winfo_exists():
+                        row_frame.configure(fg_color=normal)
+                row_frame.bind("<Enter>", enter)
+                row_frame.bind("<Leave>", leave)
+                for child in row_frame.winfo_children():
+                    if isinstance(child, ctk.CTkLabel):
+                        child.bind("<Enter>", enter)
+                        child.bind("<Leave>", leave)
+
+            make_hover(f, bg, hover_bg)
 
     def _mostrar_fortaleza(self, event=None):
         pwd = self._entradas["Contraseña *"].get()
@@ -146,7 +182,7 @@ class UsersView(BaseView):
         exito, msg = crear_usuario(usuario, nuevo_hash, rol)
         if exito:
             self.notificar("ok", "Éxito", f"Usuario '{usuario}' creado con rol {rol}")
-            self.app._ir_usuarios()
+            self.app._cambiar_pagina("Usuarios", self.app._ir_usuarios)
         else:
             self.notificar("error", "Error", f"Usuario '{usuario}' ya existe")
 
@@ -162,4 +198,4 @@ class UsersView(BaseView):
         )
         if res.get() == "Si":
             eliminar_usuario(uid)
-            self.app._ir_usuarios()
+            self.app._cambiar_pagina("Usuarios", self.app._ir_usuarios)

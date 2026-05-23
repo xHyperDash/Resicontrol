@@ -25,24 +25,40 @@ class IncidentsView(BaseView):
         ctk.CTkLabel(
             card,
             text="Descripción del incidente *",
-            font=FONT["cuerpo_pequeno"],
+            font=FONT["pequeno_bold"],
             text_color=COLORES["texto_2"],
         ).pack(anchor="w", padx=20, pady=(16, 4))
 
         self._inc_desc = ctk.CTkTextbox(
-            card, height=TEXTO_INCIDENTE_ALTURA, font=FONT["cuerpo_pequeno"],
-            fg_color=COLORES["panel"], corner_radius=RADIO_ENTRADA
+            card,
+            height=TEXTO_INCIDENTE_ALTURA,
+            font=FONT["cuerpo_pequeno"],
+            fg_color=COLORES["panel"],
+            border_color=COLORES["borde"],
+            border_width=1,
+            corner_radius=RADIO_ENTRADA
         )
         self._inc_desc.pack(fill="x", padx=20)
 
         ctk.CTkLabel(
             card,
             text="Nivel de alerta",
-            font=FONT["cuerpo_pequeno"],
+            font=FONT["pequeno_bold"],
             text_color=COLORES["texto_2"],
         ).pack(anchor="w", padx=20, pady=(12, 4))
 
-        self._inc_nivel = ctk.CTkComboBox(card, values=["bajo", "medio", "alto"], width=200)
+        self._inc_nivel = ctk.CTkComboBox(
+            card,
+            values=["bajo", "medio", "alto"],
+            width=200,
+            fg_color=COLORES["panel"],
+            border_color=COLORES["borde"],
+            button_color=COLORES["tarjeta"],
+            button_hover_color=COLORES["borde"],
+            dropdown_fg_color=COLORES["panel"],
+            dropdown_hover_color=COLORES["borde"],
+            dropdown_text_color=COLORES["texto"],
+        )
         self._inc_nivel.pack(anchor="w", padx=20, pady=(0, 16))
 
         self.boton(
@@ -53,6 +69,9 @@ class IncidentsView(BaseView):
             hover=COLORES["hover_amarillo"],
         ).pack(pady=PAD_CARD_Y)
 
+        # Explicitly call _crear_lista to display recent incidents below the form!
+        self._crear_lista()
+
     def _crear_lista(self):
         ctk.CTkLabel(
             self,
@@ -62,7 +81,13 @@ class IncidentsView(BaseView):
         ).pack(anchor="w", padx=PAD_SECTION_LABEL_X, pady=(16, 4))
 
         lista = ctk.CTkScrollableFrame(
-            self, fg_color=COLORES["tarjeta"], corner_radius=RADIO_PANEL, height=TABLA_SCROLL_ALTURA
+            self,
+            fg_color=COLORES["tarjeta"],
+            corner_radius=RADIO_PANEL,
+            height=TABLA_SCROLL_ALTURA,
+            scrollbar_button_color=COLORES["borde"],
+            scrollbar_button_hover_color=COLORES["borde_hover"],
+            scrollbar_fg_color="transparent",
         )
         lista.pack(fill="x", padx=PAD_CARD_X, pady=PAD_LIST_BOTTOM)
 
@@ -74,8 +99,9 @@ class IncidentsView(BaseView):
 
         for i, row in enumerate(obtener_incidentes()):
             bg = COLORES["panel"] if i % 2 == 0 else COLORES["tarjeta"]
-            f = ctk.CTkFrame(lista, fg_color=bg, corner_radius=0)
-            f.pack(fill="x", pady=2)
+            hover_bg = COLORES["borde"]
+            f = ctk.CTkFrame(lista, fg_color=bg, corner_radius=6)
+            f.pack(fill="x", pady=2, padx=4)
 
             color = colores_nivel.get(row["nivel"], COLORES["texto_3"])
 
@@ -103,6 +129,23 @@ class IncidentsView(BaseView):
                 text_color=COLORES["texto_3"],
             ).pack(side="right", padx=12)
 
+            # Elegant row hover highlight
+            def make_hover(row_frame, normal, hover):
+                def enter(e):
+                    if row_frame.winfo_exists():
+                        row_frame.configure(fg_color=hover)
+                def leave(e):
+                    if row_frame.winfo_exists():
+                        row_frame.configure(fg_color=normal)
+                row_frame.bind("<Enter>", enter)
+                row_frame.bind("<Leave>", leave)
+                for child in row_frame.winfo_children():
+                    if isinstance(child, ctk.CTkLabel):
+                        child.bind("<Enter>", enter)
+                        child.bind("<Leave>", leave)
+
+            make_hover(f, bg, hover_bg)
+
     def _registrar(self):
         desc = self._inc_desc.get("1.0", "end").strip()
         nivel = self._inc_nivel.get()
@@ -113,4 +156,4 @@ class IncidentsView(BaseView):
 
         registrar_incidente(desc, nivel, self.app.current_user)
         self.notificar("ok", "Éxito", "Incidente registrado correctamente")
-        self.app._ir_incidentes()
+        self.app._cambiar_pagina("Incidentes", self.app._ir_incidentes)

@@ -26,41 +26,51 @@ class ReportsView(BaseView):
 
     def _crear_formulario(self, parent):
         opciones = ctk.CTkFrame(parent, fg_color="transparent")
-        opciones.pack(pady=PAD_FORM_Y, padx=30, fill="x")
+        opciones.pack(pady=PAD_FORM_Y, padx=40, fill="x")
 
+        # Vertical stacked form layout
         ctk.CTkLabel(
             opciones,
             text="Fecha inicio:",
-            font=FONT["cuerpo_pequeno"],
+            font=FONT["pequeno_bold"],
             text_color=COLORES["texto_2"],
-        ).grid(row=0, column=0, sticky="e", padx=(0, 12), pady=8)
+        ).grid(row=0, column=0, sticky="w", pady=(8, 2))
 
-        self._rep_fecha_ini = self.entrada(opciones, placeholder="YYYY-MM-DD", width=200)
-        self._rep_fecha_ini.grid(row=0, column=1, sticky="w")
+        self._rep_fecha_ini = self.entrada(opciones, placeholder="YYYY-MM-DD", width=220)
+        self._rep_fecha_ini.grid(row=1, column=0, sticky="w", pady=(0, 8))
         self._rep_fecha_ini.insert(0, datetime.now().strftime("%Y-%m-%d"))
 
         ctk.CTkLabel(
             opciones,
             text="Fecha fin:",
-            font=FONT["cuerpo_pequeno"],
+            font=FONT["pequeno_bold"],
             text_color=COLORES["texto_2"],
-        ).grid(row=1, column=0, sticky="e", padx=(0, 12), pady=8)
+        ).grid(row=2, column=0, sticky="w", pady=(8, 2))
 
-        self._rep_fecha_fin = self.entrada(opciones, placeholder="YYYY-MM-DD", width=200)
-        self._rep_fecha_fin.grid(row=1, column=1, sticky="w")
+        self._rep_fecha_fin = self.entrada(opciones, placeholder="YYYY-MM-DD", width=220)
+        self._rep_fecha_fin.grid(row=3, column=0, sticky="w", pady=(0, 8))
         self._rep_fecha_fin.insert(0, datetime.now().strftime("%Y-%m-%d"))
 
         ctk.CTkLabel(
             opciones,
-            text="Tipo:",
-            font=FONT["cuerpo_pequeno"],
+            text="Tipo de accesos:",
+            font=FONT["pequeno_bold"],
             text_color=COLORES["texto_2"],
-        ).grid(row=2, column=0, sticky="e", padx=(0, 12), pady=8)
+        ).grid(row=4, column=0, sticky="w", pady=(8, 2))
 
         self._rep_tipo = ctk.CTkComboBox(
-            opciones, values=["Todos", "residente", "visitante"], width=200
+            opciones,
+            values=["Todos", "residente", "visitante"],
+            width=220,
+            fg_color=COLORES["panel"],
+            border_color=COLORES["borde"],
+            button_color=COLORES["tarjeta"],
+            button_hover_color=COLORES["borde"],
+            dropdown_fg_color=COLORES["panel"],
+            dropdown_hover_color=COLORES["borde"],
+            dropdown_text_color=COLORES["texto"],
         )
-        self._rep_tipo.grid(row=2, column=1, sticky="w")
+        self._rep_tipo.grid(row=5, column=0, sticky="w", pady=(0, 16))
 
         self.boton(
             parent,

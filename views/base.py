@@ -56,17 +56,32 @@ class BaseView(ctk.CTkFrame):
         )
 
     def entrada(self, parent, placeholder: str = "", **kwargs) -> ctk.CTkEntry:
-        """Create a styled entry field."""
-        return ctk.CTkEntry(
+        """Create a styled entry field with modern focus state."""
+        e = ctk.CTkEntry(
             parent,
             placeholder_text=placeholder,
             fg_color=COLORES["panel"],
-            border_color=COLORES["borde_hover"],
+            border_color=COLORES["borde"],
+            border_width=1,
             corner_radius=RADIO_ENTRADA,
             height=ENTRADA_ALTURA,
             font=FONT["cuerpo_pequeno"],
+            text_color=COLORES["texto"],
+            placeholder_text_color=COLORES["texto_3"],
             **kwargs,
         )
+        
+        def on_focus_in(event):
+            if e.winfo_exists():
+                e.configure(border_color=COLORES["acento"])
+                
+        def on_focus_out(event):
+            if e.winfo_exists():
+                e.configure(border_color=COLORES["borde"])
+                
+        e.bind("<FocusIn>", on_focus_in)
+        e.bind("<FocusOut>", on_focus_out)
+        return e
 
     def notificar(self, tipo: str = "info", titulo: str = "", mensaje: str = "") -> None:
         """Show a non-blocking toast notification."""
@@ -86,12 +101,15 @@ def create_label_frame(parent, **kwargs) -> ctk.CTkFrame:
 
 
 def create_scrollable_frame(parent, height: int = 200, **kwargs) -> ctk.CTkScrollableFrame:
-    """Create a styled scrollable frame."""
+    """Create a styled scrollable frame with thin, minimal scrollbars."""
     return ctk.CTkScrollableFrame(
         parent,
         fg_color=COLORES["tarjeta"],
         corner_radius=RADIO_PANEL,
         height=height,
+        scrollbar_button_color=COLORES["borde"],
+        scrollbar_button_hover_color=COLORES["borde_hover"],
+        scrollbar_fg_color="transparent",
         **kwargs,
     )
 

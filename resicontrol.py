@@ -105,12 +105,21 @@ class ResiControl(ctk.CTk):
         )
         frame.pack(expand=True, fill="both", padx=420, pady=40)
 
+        # Subtle premium top accent bar
+        accent_bar = ctk.CTkFrame(
+            frame,
+            height=4,
+            fg_color=COLORES["acento"],
+            corner_radius=0
+        )
+        accent_bar.pack(fill="x", side="top", pady=(0, 10))
+
         ctk.CTkLabel(
             frame,
             text="ResiControl",
             font=FONT["logo_grande"],
             text_color=COLORES["acento"],
-        ).pack(pady=(32, 4))
+        ).pack(pady=(22, 4))
         ctk.CTkLabel(
             frame,
             text="Gestión de Seguridad Residencial",
@@ -123,18 +132,23 @@ class ResiControl(ctk.CTk):
             text="Usuario",
             font=FONT["cuerpo_pequeno"],
             text_color=COLORES["texto_2"],
-        ).pack(anchor="w", padx=40, pady=(28, 4))
+        ).pack(anchor="w", padx=40, pady=(20, 4))
         self.user_entry = ctk.CTkEntry(
             frame,
             placeholder_text="Ingrese su usuario",
             fg_color=COLORES["panel"],
-            border_color=COLORES["borde_hover"],
+            border_color=COLORES["borde"],
+            border_width=1,
+            text_color=COLORES["texto"],
+            placeholder_text_color=COLORES["texto_3"],
             corner_radius=RADIO_ENTRADA,
             height=ENTRADA_ALTURA,
             font=FONT["cuerpo_pequeno"],
             width=ENTRADA_ANCHO,
         )
         self.user_entry.pack()
+        self.user_entry.bind("<FocusIn>", lambda _: self.user_entry.configure(border_color=COLORES["acento"]))
+        self.user_entry.bind("<FocusOut>", lambda _: self.user_entry.configure(border_color=COLORES["borde"]))
 
         ctk.CTkLabel(
             frame,
@@ -146,7 +160,10 @@ class ResiControl(ctk.CTk):
             frame,
             placeholder_text="********",
             fg_color=COLORES["panel"],
-            border_color=COLORES["borde_hover"],
+            border_color=COLORES["borde"],
+            border_width=1,
+            text_color=COLORES["texto"],
+            placeholder_text_color=COLORES["texto_3"],
             corner_radius=RADIO_ENTRADA,
             height=ENTRADA_ALTURA,
             font=FONT["cuerpo_pequeno"],
@@ -154,11 +171,13 @@ class ResiControl(ctk.CTk):
             show="*",
         )
         self.pwd_entry.pack()
+        self.pwd_entry.bind("<FocusIn>", lambda _: self.pwd_entry.configure(border_color=COLORES["acento"]))
+        self.pwd_entry.bind("<FocusOut>", lambda _: self.pwd_entry.configure(border_color=COLORES["borde"]))
 
         self._fortaleza_lbl = ctk.CTkLabel(
             frame, text="", font=FONT["pequeno"], text_color=COLORES["texto_3"]
         )
-        self._fortaleza_lbl.pack(anchor="w", padx=40)
+        self._fortaleza_lbl.pack(anchor="w", padx=40, pady=(4, 0))
         self.pwd_entry.bind("<KeyRelease>", self._mostrar_fortaleza)
 
         ctk.CTkButton(
@@ -172,7 +191,7 @@ class ResiControl(ctk.CTk):
             font=FONT["boton"],
             text_color=COLORES["boton_texto"],
             width=ENTRADA_ANCHO,
-        ).pack(pady=28)
+        ).pack(pady=24)
 
         self.error_lbl = ctk.CTkLabel(
             frame, text="", text_color=COLORES["rojo"], font=FONT["cuerpo_pequeno"]
@@ -273,7 +292,11 @@ class ResiControl(ctk.CTk):
         )
 
         self.sidebar_menu = ctk.CTkScrollableFrame(
-            self.sidebar, fg_color="transparent"
+            self.sidebar,
+            fg_color="transparent",
+            scrollbar_button_color=COLORES["borde"],
+            scrollbar_button_hover_color=COLORES["borde_hover"],
+            scrollbar_fg_color="transparent",
         )
         self.sidebar_menu.pack(fill="both", expand=True)
 
@@ -285,7 +308,7 @@ class ResiControl(ctk.CTk):
         from views.toast import ToastManager
         self.toast = ToastManager(self.contenido)
 
-        self._ir_inicio()
+        self._cambiar_pagina("Inicio", self._ir_inicio)
 
     def crear_contenido(self) -> None:
         """Create the main content area."""

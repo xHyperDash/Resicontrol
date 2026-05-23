@@ -28,7 +28,14 @@ class TableView(ctk.CTkFrame):
         self._search_callback = search_callback
         self._search_text = ""
 
-        scroll_kwargs = dict(fg_color=COLORES["tarjeta"], corner_radius=12, height=height)
+        scroll_kwargs = dict(
+            fg_color=COLORES["tarjeta"],
+            corner_radius=12,
+            height=height,
+            scrollbar_button_color=COLORES["borde"],
+            scrollbar_button_hover_color=COLORES["borde_hover"],
+            scrollbar_fg_color="transparent",
+        )
 
         if searchable:
             top = ctk.CTkFrame(self, fg_color="transparent")
@@ -114,13 +121,14 @@ class TableView(ctk.CTkFrame):
 
         for i, row in enumerate(rows):
             bg = COLORES["panel"] if i % 2 == 0 else COLORES["tarjeta"]
-            f = ctk.CTkFrame(self._frame, fg_color=bg, corner_radius=0)
-            f.pack(fill="x")
+            hover_bg = COLORES["borde"]
+            f = ctk.CTkFrame(self._frame, fg_color=bg, corner_radius=6)
+            f.pack(fill="x", pady=2, padx=4)
 
             for col in self._columns:
                 if col == "Acciones":
                     actions_frame = ctk.CTkFrame(f, fg_color="transparent")
-                    actions_frame.pack(side="left", padx=4)
+                    actions_frame.pack(side="left", padx=8)
 
                     for action in self._actions:
                         condition = action.get("condition")
@@ -130,14 +138,14 @@ class TableView(ctk.CTkFrame):
                         ctk.CTkButton(
                             actions_frame,
                             text=action["label"],
-                            width=action.get("width", 36),
+                            width=action.get("width", 54),
                             height=action.get("height", 28),
                             corner_radius=action.get("radius", 6),
                             fg_color=action.get("color", COLORES["azul"]),
                             hover_color=action.get("hover", COLORES["azul_hover"]),
                             font=FONT["tabla_dato"],
                             command=lambda r=row, cb=action["callback"]: cb(r),
-                        ).pack(side="left", padx=2)
+                        ).pack(side="left", padx=4)
                 else:
                     key = self._get_key(col)
                     val = row.get(key, "—")
@@ -149,3 +157,21 @@ class TableView(ctk.CTkFrame):
                         text_color=COLORES["texto_2"],
                         wraplength=150,
                     ).pack(side="left", expand=True, padx=6, pady=6)
+
+            # Elegant row hover animation highlight
+            def make_hover(row_frame, normal, hover):
+                def enter(e):
+                    if row_frame.winfo_exists():
+                        row_frame.configure(fg_color=hover)
+                def leave(e):
+                    if row_frame.winfo_exists():
+                        row_frame.configure(fg_color=normal)
+                
+                row_frame.bind("<Enter>", enter)
+                row_frame.bind("<Leave>", leave)
+                for child in row_frame.winfo_children():
+                    if isinstance(child, ctk.CTkLabel):
+                        child.bind("<Enter>", enter)
+                        child.bind("<Leave>", leave)
+
+            make_hover(f, bg, hover_bg)

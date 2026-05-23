@@ -63,8 +63,15 @@ class BackupView(BaseView):
             text_color=COLORES["texto_3"],
         ).pack(anchor="w", padx=PAD_SECTION_LABEL_X, pady=(16, 4))
 
+        # Thin scrollbar configuration
         lista = ctk.CTkScrollableFrame(
-            self, fg_color=COLORES["tarjeta"], corner_radius=RADIO_PANEL, height=LISTA_BACKUPS_ALTURA
+            self,
+            fg_color=COLORES["tarjeta"],
+            corner_radius=RADIO_PANEL,
+            height=LISTA_BACKUPS_ALTURA,
+            scrollbar_button_color=COLORES["borde"],
+            scrollbar_button_hover_color=COLORES["borde_hover"],
+            scrollbar_fg_color="transparent",
         )
         lista.pack(fill="both", padx=PAD_CARD_X, pady=PAD_LIST_BOTTOM, expand=True)
 
@@ -80,8 +87,9 @@ class BackupView(BaseView):
         else:
             for i, bp in enumerate(backups):
                 bg = COLORES["panel"] if i % 2 == 0 else COLORES["tarjeta"]
-                f = ctk.CTkFrame(lista, fg_color=bg, corner_radius=0)
-                f.pack(fill="x")
+                hover_bg = COLORES["borde"]
+                f = ctk.CTkFrame(lista, fg_color=bg, corner_radius=6)
+                f.pack(fill="x", pady=2, padx=4)
 
                 nombre = os.path.basename(bp)
                 ctk.CTkLabel(
@@ -94,7 +102,7 @@ class BackupView(BaseView):
                 ctk.CTkButton(
                     f,
                     text="Restaurar",
-                    width=ACCION_BOTON_ANCHO,
+                    width=ACCION_BOTON_ANCHO + 14,
                     height=BOTON_PEQUENO_ALTURA,
                     fg_color=COLORES["amarillo"],
                     hover_color=COLORES["hover_amarillo"],
@@ -102,6 +110,23 @@ class BackupView(BaseView):
                     corner_radius=RADIO_BOTON_PEQUENO,
                     command=lambda p=bp: self._restaurar(p),
                 ).pack(side="left", padx=8, pady=4)
+
+                # High fidelity row hover binders
+                def make_hover(row_frame, normal, hover):
+                    def enter(e):
+                        if row_frame.winfo_exists():
+                            row_frame.configure(fg_color=hover)
+                    def leave(e):
+                        if row_frame.winfo_exists():
+                            row_frame.configure(fg_color=normal)
+                    row_frame.bind("<Enter>", enter)
+                    row_frame.bind("<Leave>", leave)
+                    for child in row_frame.winfo_children():
+                        if isinstance(child, ctk.CTkLabel):
+                            child.bind("<Enter>", enter)
+                            child.bind("<Leave>", leave)
+
+                make_hover(f, bg, hover_bg)
 
     def _crear_manual(self):
         exito, msg = crear_backup()
@@ -128,4 +153,4 @@ class BackupView(BaseView):
                 self._recargar()
 
     def _recargar(self):
-        self.app._ir_backups()
+        self.app._cambiar_pagina("Respaldos", self.app._ir_backups)

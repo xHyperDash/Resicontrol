@@ -114,13 +114,24 @@ class QRScannerView(BaseView):
 
         if row:
             info = (
+                f"✅ ACCESO AUTORIZADO\n\n"
+                f"Residente: {row['nombre']}\n"
                 f"Unidad: {row['unidad']}\n"
-                f"Nombre: {row['nombre']}\n"
-                f"Teléfono: {row['telefono'] or '—'}\n"
-                f"Placa: {row['placa']}"
+                f"Placa: {row['placa']}\n"
+                f"Teléfono: {row['telefono'] or '—'}"
             )
-            self.notificar("info", "Residente encontrado", info)
+            self.info_qr.configure(
+                text=info,
+                text_color=COLORES["verde_brillante"],
+                font=FONT["subtitulo"]
+            )
+            self.notificar("ok", "Acceso autorizado", f"Unidad {row['unidad']} - {row['nombre']}")
         else:
+            self.info_qr.configure(
+                text=f"❌ ACCESO DENEGADO\n\nPlaca {placa} no registrada",
+                text_color=COLORES["rojo"],
+                font=FONT["subtitulo"]
+            )
             self.notificar(
-                "aviso", "No registrado", f"Placa {placa} no encontrada en residentes activos"
+                "error", "Acceso denegado", f"Placa {placa} no registrada en residentes activos"
             )

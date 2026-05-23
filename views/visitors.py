@@ -29,12 +29,15 @@ class VisitorsView(BaseView):
         self._crear_vista()
 
     def _crear_vista(self):
-        self.label_seccion(self, "Registro de Visitantes")
-        card = self.tarjeta(self)
-        card.pack(fill="both", padx=PAD_CARD_X, pady=PAD_CARD_Y, expand=True)
+        scroll = ctk.CTkScrollableFrame(self, fg_color="transparent")
+        scroll.pack(fill="both", expand=True)
+
+        self.label_seccion(scroll, "Registro de Visitantes")
+        card = self.tarjeta(scroll)
+        card.pack(fill="x", padx=PAD_CARD_X, pady=PAD_CARD_Y)
 
         self._crear_formulario(card)
-        self._crear_tabla_activos()
+        self._crear_tabla_activos(scroll)
 
     def _crear_formulario(self, parent):
         form = ctk.CTkFrame(parent, fg_color="transparent")
@@ -47,15 +50,18 @@ class VisitorsView(BaseView):
             ("Invitado por (unidad) *", "Ej: 301", False),
         ]
 
+        # Vertical stacked layout for visitor inputs
         for i, (label, hint, oculto) in enumerate(campos):
-            ctk.CTkLabel(
+            lbl = ctk.CTkLabel(
                 form,
                 text=label,
-                font=FONT["cuerpo_pequeno"],
+                font=FONT["pequeno_bold"],
                 text_color=COLORES["texto_2"],
-            ).grid(row=i, column=0, sticky="e", padx=(0, 16), pady=8)
+            )
+            lbl.grid(row=2 * i, column=0, sticky="w", padx=(4, 0), pady=(8, 2))
+            
             e = self.entrada(form, placeholder=hint, width=FORMULARIO_ENTRADA_ANCHO, show="*" if oculto else "")
-            e.grid(row=i, column=1, pady=8, sticky="w")
+            e.grid(row=2 * i + 1, column=0, pady=(0, 8), sticky="w")
             self._entradas[label] = e
 
         self._consent = ctk.CTkCheckBox(
@@ -63,6 +69,9 @@ class VisitorsView(BaseView):
             text="Autorizo el tratamiento de datos personales (Ley 1581/2012)",
             font=FONT["checkbox"],
             text_color=COLORES["texto_2"],
+            fg_color=COLORES["acento"],
+            hover_color=COLORES["sidebar_hover"],
+            border_color=COLORES["borde"]
         )
         self._consent.pack(pady=12)
 
@@ -81,16 +90,23 @@ class VisitorsView(BaseView):
             width=BOTON_SECUNDARIO_ANCHO,
         ).pack(side="left", padx=PAD_BUTTON_GAP_X)
 
-    def _crear_tabla_activos(self):
+    def _crear_tabla_activos(self, parent):
         ctk.CTkLabel(
-            self,
+            parent,
             text="Visitantes actualmente dentro",
             font=FONT["subtitulo"],
             text_color=COLORES["texto_3"],
         ).pack(anchor="w", padx=PAD_SECTION_LABEL_X, pady=(8, 4))
 
+        # Thin scrollbar configuration
         lista = ctk.CTkScrollableFrame(
-            self, fg_color=COLORES["tarjeta"], corner_radius=RADIO_PANEL, height=LISTA_VISITANTES_ALTURA
+            parent,
+            fg_color=COLORES["tarjeta"],
+            corner_radius=RADIO_PANEL,
+            height=LISTA_VISITANTES_ALTURA,
+            scrollbar_button_color=COLORES["borde"],
+            scrollbar_button_hover_color=COLORES["borde_hover"],
+            scrollbar_fg_color="transparent",
         )
         lista.pack(fill="x", padx=PAD_CARD_X, pady=PAD_LIST_BOTTOM)
 
@@ -113,8 +129,9 @@ class VisitorsView(BaseView):
 
     def _crear_fila_tabla(self, parent, datos, indice):
         bg = COLORES["panel"] if indice % 2 == 0 else COLORES["tarjeta"]
-        f = ctk.CTkFrame(parent, fg_color=bg, corner_radius=0)
-        f.pack(fill="x")
+        hover_bg = COLORES["borde"]
+        f = ctk.CTkFrame(parent, fg_color=bg, corner_radius=6)
+        f.pack(fill="x", pady=2, padx=4)
 
         for key in ["nombre", "cedula", "placa", "unidad", "entrada", "operador"]:
             ctk.CTkLabel(
@@ -134,7 +151,24 @@ class VisitorsView(BaseView):
             hover_color=COLORES["hover_amarillo"],
             font=FONT["tabla_dato"],
             command=lambda d=datos: self._editar_dialog(d),
-        ).pack(side="left", padx=4, pady=4)
+        ).pack(side="left", padx=8, pady=4)
+
+        # High fidelity hover bindings
+        def bind_row(row_frame, normal_c, hover_c):
+            def enter(e):
+                if row_frame.winfo_exists():
+                    row_frame.configure(fg_color=hover_c)
+            def leave(e):
+                if row_frame.winfo_exists():
+                    row_frame.configure(fg_color=normal_c)
+            row_frame.bind("<Enter>", enter)
+            row_frame.bind("<Leave>", leave)
+            for child in row_frame.winfo_children():
+                if isinstance(child, ctk.CTkLabel):
+                    child.bind("<Enter>", enter)
+                    child.bind("<Leave>", leave)
+
+        bind_row(f, bg, hover_bg)
 
     def _registrar_entrada(self):
         if not self._consent.get():
@@ -152,7 +186,7 @@ class VisitorsView(BaseView):
         if not validate_cedula(cedula):
             self.notificar("error", "Error", "Cédula inválida o vacía")
             return
-        if not validate_unidad(unidad)[0]:
+        if not validate_unidad(unidad):
             self.notificar("error", "Error", "Unidad es obligatoria")
             return
         if placa and not validate_placa(placa):
@@ -180,7 +214,7 @@ class VisitorsView(BaseView):
     def _editar_dialog(self, datos: dict):
         dialog = ctk.CTkToplevel(self.app)
         dialog.title("Editar Visitante")
-        dialog.geometry("420x340")
+        dialog.geometry("420x420")
         dialog.configure(fg_color=COLORES["panel"])
         dialog.transient(self.app)
         dialog.grab_set()
@@ -190,10 +224,10 @@ class VisitorsView(BaseView):
             text="Editar datos del visitante",
             font=FONT["dialogo_titulo"],
             text_color=COLORES["texto"],
-        ).pack(pady=(16, 8))
+        ).pack(pady=(20, 8))
 
         frame = ctk.CTkFrame(dialog, fg_color="transparent")
-        frame.pack(padx=30, fill="x")
+        frame.pack(padx=40, fill="x")
 
         campos = [
             ("Nombre:", "nombre", datos.get("nombre", "")),
@@ -203,11 +237,15 @@ class VisitorsView(BaseView):
 
         entradas = {}
         for i, (label, key, val) in enumerate(campos):
-            ctk.CTkLabel(frame, text=label, font=FONT["tabla_dato"]).grid(
-                row=i, column=0, sticky="w", pady=6
-            )
-            e = self.entrada(frame, placeholder=label, width=DIALOGO_ENTRADA_ANCHO)
-            e.grid(row=i, column=1, pady=6, padx=(8, 0))
+            ctk.CTkLabel(
+                frame,
+                text=label,
+                font=FONT["pequeno_bold"],
+                text_color=COLORES["texto_2"]
+            ).grid(row=2 * i, column=0, sticky="w", pady=(8, 2))
+            
+            e = self.entrada(frame, placeholder=label, width=DIALOGO_ENTRADA_ANCHO + 40)
+            e.grid(row=2 * i + 1, column=0, pady=(0, 8), sticky="w")
             e.insert(0, str(val))
             entradas[key] = e
 
@@ -234,7 +272,7 @@ class VisitorsView(BaseView):
                 dialog.destroy()
                 self._recargar()
 
-        self.boton(dialog, "Guardar", guardar, color=COLORES["verde"]).pack(pady=16)
+        self.boton(dialog, "Guardar", guardar, color=COLORES["verde"]).pack(pady=20)
 
     def _recargar(self):
-        self.app._ir_visitantes()
+        self.app._cambiar_pagina("Visitantes", self.app._ir_visitantes)

@@ -28,7 +28,18 @@ class HistoryView(BaseView):
         self._hist_busq = self.entrada(filtros, placeholder="Buscar por nombre, cédula o placa...", width=BUSQUEDA_ENTRADA_ANCHO)
         self._hist_busq.pack(side="left", padx=(0, 10))
 
-        self._hist_tipo = ctk.CTkComboBox(filtros, values=["Todos", "residente", "visitante"], width=160)
+        self._hist_tipo = ctk.CTkComboBox(
+            filtros,
+            values=["Todos", "residente", "visitante"],
+            width=160,
+            fg_color=COLORES["panel"],
+            border_color=COLORES["borde"],
+            button_color=COLORES["tarjeta"],
+            button_hover_color=COLORES["borde"],
+            dropdown_fg_color=COLORES["panel"],
+            dropdown_hover_color=COLORES["borde"],
+            dropdown_text_color=COLORES["texto"],
+        )
         self._hist_tipo.pack(side="left", padx=(0, 10))
 
         self.boton(filtros, "Filtrar", self._filtrar, width=120).pack(side="left")
@@ -39,8 +50,15 @@ class HistoryView(BaseView):
         self._crear_tabla()
 
     def _crear_tabla(self):
+        # Configure thin scrollbar
         self._hist_frame = ctk.CTkScrollableFrame(
-            self, fg_color=COLORES["tarjeta"], corner_radius=RADIO_PANEL, height=TABLA_HISTORIAL_ALTURA
+            self,
+            fg_color=COLORES["tarjeta"],
+            corner_radius=RADIO_PANEL,
+            height=TABLA_HISTORIAL_ALTURA,
+            scrollbar_button_color=COLORES["borde"],
+            scrollbar_button_hover_color=COLORES["borde_hover"],
+            scrollbar_fg_color="transparent",
         )
         self._hist_frame.pack(fill="both", padx=PAD_CARD_X, pady=PAD_CARD_Y, expand=True)
         self._renderizar()
@@ -65,8 +83,9 @@ class HistoryView(BaseView):
 
         for i, row in enumerate(registros):
             bg = COLORES["panel"] if i % 2 == 0 else COLORES["tarjeta"]
-            f = ctk.CTkFrame(self._hist_frame, fg_color=bg, corner_radius=0)
-            f.pack(fill="x")
+            hover_bg = COLORES["borde"]
+            f = ctk.CTkFrame(self._hist_frame, fg_color=bg, corner_radius=6)
+            f.pack(fill="x", pady=2, padx=4)
 
             valores_visibles = [
                 row.get("tipo", ""),
@@ -99,7 +118,24 @@ class HistoryView(BaseView):
                     hover_color=COLORES["hover_amarillo"],
                     font=FONT["tabla_dato"],
                     command=lambda r=row: self._editar_dialog(r),
-                ).pack(side="left", padx=4, pady=4)
+                ).pack(side="left", padx=8, pady=4)
+
+            # Row hover highlights
+            def make_hover(row_frame, normal, hover):
+                def enter(e):
+                    if row_frame.winfo_exists():
+                        row_frame.configure(fg_color=hover)
+                def leave(e):
+                    if row_frame.winfo_exists():
+                        row_frame.configure(fg_color=normal)
+                row_frame.bind("<Enter>", enter)
+                row_frame.bind("<Leave>", leave)
+                for child in row_frame.winfo_children():
+                    if isinstance(child, ctk.CTkLabel):
+                        child.bind("<Enter>", enter)
+                        child.bind("<Leave>", leave)
+
+            make_hover(f, bg, hover_bg)
 
     def _filtrar(self):
         self._renderizar(self._hist_busq.get().strip(), self._hist_tipo.get())
@@ -116,17 +152,20 @@ class HistoryView(BaseView):
     def _editar_dialog(self, datos: dict):
         dialog = ctk.CTkToplevel(self.app)
         dialog.title("Editar Registro")
-        dialog.geometry("400x280")
+        dialog.geometry("400x420")
         dialog.configure(fg_color=COLORES["panel"])
         dialog.transient(self.app)
         dialog.grab_set()
 
-        ctk.CTkLabel(dialog, text="Editar registro activo", font=FONT["dialogo_titulo"]).pack(
-            pady=(16, 8)
-        )
+        ctk.CTkLabel(
+            dialog,
+            text="Editar registro activo",
+            font=FONT["dialogo_titulo"],
+            text_color=COLORES["texto"]
+        ).pack(pady=(20, 8))
 
         frame = ctk.CTkFrame(dialog, fg_color="transparent")
-        frame.pack(padx=30, fill="x")
+        frame.pack(padx=40, fill="x")
 
         lbls = [
             ("Nombre:", "nombre", datos.get("nombre", "")),
@@ -134,13 +173,18 @@ class HistoryView(BaseView):
             ("Placa:", "placa", datos.get("placa", "") or ""),
         ]
 
+        # Stack dialog inputs vertically
         ents = {}
         for i, (label, key, val) in enumerate(lbls):
-            ctk.CTkLabel(frame, text=label, font=FONT["tabla_dato"]).grid(
-                row=i, column=0, sticky="w", pady=6
-            )
-            e = self.entrada(frame, placeholder=label, width=DIALOGO_ENTRADA_ANCHO)
-            e.grid(row=i, column=1, pady=6, padx=(8, 0))
+            ctk.CTkLabel(
+                frame,
+                text=label,
+                font=FONT["pequeno_bold"],
+                text_color=COLORES["texto_2"]
+            ).grid(row=2 * i, column=0, sticky="w", pady=(8, 2))
+            
+            e = self.entrada(frame, placeholder=label, width=DIALOGO_ENTRADA_ANCHO + 40)
+            e.grid(row=2 * i + 1, column=0, pady=(0, 8), sticky="w")
             e.insert(0, str(val))
             ents[key] = e
 
@@ -157,6 +201,6 @@ class HistoryView(BaseView):
             self.notificar("ok" if exito else "error", "Editar", msg)
             if exito:
                 dialog.destroy()
-                self.app._ir_historial()
+                self.app._cambiar_pagina("Historial", self.app._ir_historial)
 
-        self.boton(dialog, "Guardar", guardar, color=COLORES["verde"]).pack(pady=16)
+        self.boton(dialog, "Guardar", guardar, color=COLORES["verde"]).pack(pady=20)

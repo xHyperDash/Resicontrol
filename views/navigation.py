@@ -88,6 +88,7 @@ def create_sidebar_menu(
         menu_data[texto] = {
             "btn": btn,
             "es_peligro": es_peligro,
+            "icono_nombre": icono,
         }
 
     return menu_data
@@ -96,6 +97,7 @@ def create_sidebar_menu(
 def update_active(menu_data: dict[str, dict], active_text: str | None = None) -> None:
     for texto, data in menu_data.items():
         btn = data["btn"]
+        icono_nombre = data.get("icono_nombre", "")
         es_peligro = data.get("es_peligro", False)
         es_activo = texto == active_text
 
@@ -105,12 +107,16 @@ def update_active(menu_data: dict[str, dict], active_text: str | None = None) ->
                 text_color=COLORES["rojo"],
             )
         elif es_activo:
+            icon_act = get_icon(icono_nombre, size=18, color=COLORES["acento"])
             btn.configure(
                 fg_color=COLORES["sidebar_hover"],
-                text_color=COLORES["texto"],
+                text_color=COLORES["acento"],
+                image=icon_act,
             )
         else:
+            icon_inact = get_icon(icono_nombre, size=18, color=COLORES["texto_2"])
             btn.configure(
                 fg_color="transparent",
                 text_color=COLORES["texto_2"],
+                image=icon_inact,
             )
