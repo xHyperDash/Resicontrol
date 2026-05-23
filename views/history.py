@@ -63,6 +63,8 @@ class HistoryView(BaseView):
         self._hist_frame.pack(fill="both", padx=PAD_CARD_X, pady=PAD_CARD_Y, expand=True)
         self._renderizar()
 
+    COL_ANCHOS = [70, 200, 130, 100, 160, 100, 100, 70]
+
     def _renderizar(self, busq="", tipo="Todos"):
         for w in self._hist_frame.winfo_children():
             w.destroy()
@@ -71,13 +73,11 @@ class HistoryView(BaseView):
         fila_h = ctk.CTkFrame(self._hist_frame, fg_color=COLORES["tabla_header"], corner_radius=0)
         fila_h.pack(fill="x")
 
-        for h in encabezados:
+        for ci, nombre in enumerate(encabezados):
             ctk.CTkLabel(
-                fila_h,
-                text=h,
-                font=FONT["tabla_cabecera"],
-                text_color=COLORES["texto_3"],
-            ).pack(side="left", expand=True, padx=6, pady=8)
+                fila_h, text=nombre, width=self.COL_ANCHOS[ci],
+                font=FONT["tabla_cabecera"], text_color=COLORES["texto_3"],
+            ).pack(side="left", padx=2, pady=8)
 
         registros = obtener_historial(busq, tipo)
 
@@ -87,40 +87,28 @@ class HistoryView(BaseView):
             f = ctk.CTkFrame(self._hist_frame, fg_color=bg, corner_radius=6)
             f.pack(fill="x", pady=2, padx=4)
 
-            valores_visibles = [
-                row.get("tipo", ""),
-                row.get("nombre", ""),
-                row.get("cedula", ""),
-                row.get("placa", ""),
-                row.get("entrada", ""),
-                row.get("salida", ""),
+            valores = [
+                row.get("tipo", ""), row.get("nombre", ""), row.get("cedula", ""),
+                row.get("placa", ""), row.get("entrada", ""),
+                str(row.get("salida", "")) if row.get("salida") else "Activo",
                 row.get("operador", ""),
             ]
-
-            for val in valores_visibles:
-                texto = str(val) if val is not None else "Activo"
+            for ci, val in enumerate(valores):
                 ctk.CTkLabel(
-                    f,
-                    text=texto,
-                    font=FONT["tabla_dato"],
-                    text_color=COLORES["texto_2"],
-                    wraplength=150,
-                ).pack(side="left", expand=True, padx=6, pady=6)
+                    f, text=val, width=self.COL_ANCHOS[ci],
+                    font=FONT["tabla_dato"], text_color=COLORES["texto_2"],
+                ).pack(side="left", padx=2, pady=6)
 
             if row.get("salida") is None:
                 ctk.CTkButton(
-                    f,
-                    text="Edit",
-                    width=BOTON_PEQUENO_ANCHO,
+                    f, text="Edit", width=self.COL_ANCHOS[7],
                     height=BOTON_PEQUENO_ALTURA,
                     corner_radius=RADIO_BOTON_PEQUENO,
-                    fg_color=COLORES["amarillo"],
-                    hover_color=COLORES["hover_amarillo"],
+                    fg_color=COLORES["amarillo"], hover_color=COLORES["hover_amarillo"],
                     font=FONT["tabla_dato"],
                     command=lambda r=row: self._editar_dialog(r),
-                ).pack(side="left", padx=8, pady=4)
+                ).pack(side="left", padx=2, pady=4)
 
-            # Row hover highlights
             def make_hover(row_frame, normal, hover):
                 def enter(e):
                     if row_frame.winfo_exists():
@@ -142,9 +130,9 @@ class HistoryView(BaseView):
 
     def _exportar_csv(self):
         busq = self._hist_busq.get().strip()
-        fecha_ini = busq if busq else "2020-01-01"
-        fecha_fin = busq if busq else datetime.now().strftime("%Y-%m-%d")
-        ok, ruta = generar_csv(fecha_ini, fecha_fin, self._hist_tipo.get())
+        fecha_ini = "2020-01-01"
+        fecha_fin = datetime.now().strftime("%Y-%m-%d")
+        ok, ruta = generar_csv(fecha_ini, fecha_fin, self._hist_tipo.get(), busq)
         if ok:
             abrir_archivo_qr(ruta)
         self.notificar("ok" if ok else "error", "Exportar CSV", ruta)

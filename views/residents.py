@@ -228,6 +228,8 @@ class ResidentsView(BaseView):
         self._tabla.pack(fill="both", expand=True, padx=20, pady=(0, 20))
         self._renderizar_tabla()
 
+    COL_RESID_ANCHOS = [50, 80, 180, 120, 180, 100, 50, 90]
+
     def _renderizar_tabla(self, filtro=""):
         for w in self._tabla.winfo_children():
             w.destroy()
@@ -235,13 +237,14 @@ class ResidentsView(BaseView):
         encabezados = ["ID", "Unidad", "Nombre", "Teléfono", "Email", "Placa", "QR", "Acciones"]
         header = ctk.CTkFrame(self._tabla, fg_color=COLORES["tabla_header"], corner_radius=0)
         header.pack(fill="x")
-        for h in encabezados:
+        for ci, h in enumerate(encabezados):
             ctk.CTkLabel(
                 header,
                 text=h,
+                width=self.COL_RESID_ANCHOS[ci],
                 font=FONT["tabla_cabecera"],
                 text_color=COLORES["texto_3"],
-            ).pack(side="left", expand=True, padx=6, pady=8)
+            ).pack(side="left", padx=2, pady=8)
 
         for i, row in enumerate(obtener_residentes(filtro)):
             bg = COLORES["panel"] if i % 2 == 0 else COLORES["tarjeta"]
@@ -249,21 +252,23 @@ class ResidentsView(BaseView):
             f = ctk.CTkFrame(self._tabla, fg_color=bg, corner_radius=6)
             f.pack(fill="x", pady=2, padx=4)
 
-            for key in ["id", "unidad", "nombre", "telefono", "email", "placa"]:
+            for ci, key in enumerate(["id", "unidad", "nombre", "telefono", "email", "placa"]):
                 val = row.get(key)
                 texto = str(val or "—")
                 ctk.CTkLabel(
-                    f, text=texto, font=FONT["tabla_dato"], text_color=COLORES["texto_2"]
-                ).pack(side="left", expand=True, padx=6, pady=6)
+                    f, text=texto, width=self.COL_RESID_ANCHOS[ci],
+                    font=FONT["tabla_dato"], text_color=COLORES["texto_2"],
+                ).pack(side="left", padx=2, pady=6)
 
             qr_path = row.get("qr_code") or ""
             qr_texto = "Si" if qr_path and os.path.exists(qr_path) else "—"
             ctk.CTkLabel(
-                f, text=qr_texto, font=FONT["tabla_dato"], text_color=COLORES["texto_2"]
-            ).pack(side="left", expand=True, padx=6, pady=6)
+                f, text=qr_texto, width=self.COL_RESID_ANCHOS[6],
+                font=FONT["tabla_dato"], text_color=COLORES["texto_2"],
+            ).pack(side="left", padx=2, pady=6)
 
             frame_acc = ctk.CTkFrame(f, fg_color="transparent")
-            frame_acc.pack(side="left", padx=8)
+            frame_acc.pack(side="left", padx=2)
             rid = row["id"]
 
             ctk.CTkButton(
@@ -276,7 +281,7 @@ class ResidentsView(BaseView):
                 hover_color=COLORES["azul_hover"],
                 font=FONT["tabla_dato"],
                 command=lambda r=row: self._editar_dialog(r),
-            ).pack(side="left", padx=4)
+            ).pack(side="left", padx=2)
 
             ctk.CTkButton(
                 frame_acc,
@@ -288,7 +293,7 @@ class ResidentsView(BaseView):
                 hover_color=COLORES["rojo_hover"],
                 font=FONT["tabla_dato"],
                 command=lambda i=rid: self._eliminar(i),
-            ).pack(side="left", padx=4)
+            ).pack(side="left", padx=2)
 
             # High fidelity row hover bindings
             def bind_row_hover(row_frame, normal_c, hover_c):
@@ -313,7 +318,7 @@ class ResidentsView(BaseView):
     def _editar_dialog(self, datos: dict):
         dialog = ctk.CTkToplevel(self.app)
         dialog.title("Editar Residente")
-        dialog.geometry("450x520")
+        dialog.geometry("450x620")
         dialog.configure(fg_color=COLORES["panel"])
         dialog.transient(self.app)
         dialog.grab_set()
@@ -367,7 +372,31 @@ class ResidentsView(BaseView):
                 dialog.destroy()
                 self._recargar()
 
-        self.boton(dialog, "Guardar Cambios", guardar, color=COLORES["verde"]).pack(pady=20)
+        def generar_qr_desde_dialog():
+            if not QR_DISPONIBLE:
+                self.notificar("error", "No disponible", "Librería qrcode no instalada")
+                return
+            placa = entradas["placa"][0].get().strip().upper()
+            if not placa:
+                self.notificar("error", "Error", "Ingrese la placa primero")
+                return
+            ok, msg = generar_qr(placa)
+            self.notificar("ok" if ok else "error", "QR" if ok else "Error", msg)
+
+        fila_btns = ctk.CTkFrame(dialog, fg_color="transparent")
+        fila_btns.pack(pady=20)
+
+        self.boton(
+            fila_btns, "Guardar Cambios", guardar,
+            color=COLORES["verde"], width=180,
+        ).pack(side="left", padx=6)
+
+        if QR_DISPONIBLE:
+            self.boton(
+                fila_btns, "Generar QR", generar_qr_desde_dialog,
+                color=COLORES["amarillo"], hover=COLORES["hover_amarillo"],
+                width=140,
+            ).pack(side="left", padx=6)
 
     def _eliminar(self, rid: int):
         from CTkMessagebox import CTkMessagebox

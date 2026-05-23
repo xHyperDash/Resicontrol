@@ -23,12 +23,15 @@ class UsersView(BaseView):
         if self.app.rol != "admin":
             return
 
-        self.label_seccion(self, "Gestión de Usuarios")
-        card = self.tarjeta(self)
+        scroll = ctk.CTkScrollableFrame(self, fg_color="transparent")
+        scroll.pack(fill="both", expand=True)
+
+        self.label_seccion(scroll, "Gestión de Usuarios")
+        card = self.tarjeta(scroll)
         card.pack(fill="x", padx=PAD_CARD_X, pady=PAD_CARD_Y)
 
         self._crear_formulario(card)
-        self._crear_lista()
+        self._crear_lista(scroll)
 
     def _crear_formulario(self, parent):
         form = ctk.CTkFrame(parent, fg_color="transparent")
@@ -79,9 +82,11 @@ class UsersView(BaseView):
 
         self.boton(parent, "Crear Usuario", self._crear, width=BOTON_SECUNDARIO_ANCHO).pack(pady=PAD_CARD_Y)
 
-    def _crear_lista(self):
+    def _crear_lista(self, parent=None):
+        if parent is None:
+            parent = self
         ctk.CTkLabel(
-            self,
+            parent,
             text="Usuarios existentes",
             font=FONT["titulo_seccion"],
             text_color=COLORES["texto_3"],
@@ -89,7 +94,7 @@ class UsersView(BaseView):
 
         # Thin scrollbar styling
         lista = ctk.CTkScrollableFrame(
-            self,
+            parent,
             fg_color=COLORES["tarjeta"],
             corner_radius=RADIO_PANEL,
             height=LISTA_USUARIOS_ALTURA,
@@ -99,16 +104,19 @@ class UsersView(BaseView):
         )
         lista.pack(fill="x", padx=PAD_CARD_X, pady=PAD_LIST_BOTTOM)
 
+        COL_USR_ANCHOS = [100, 400, 250, 150]
+
         fila_h = ctk.CTkFrame(lista, fg_color=COLORES["tabla_header"], corner_radius=0)
         fila_h.pack(fill="x")
 
-        for h in ["ID", "Usuario", "Rol", "Acciones"]:
+        for ci, h in enumerate(["ID", "Usuario", "Rol", "Acciones"]):
             ctk.CTkLabel(
                 fila_h,
                 text=h,
+                width=COL_USR_ANCHOS[ci],
                 font=FONT["tabla_cabecera"],
                 text_color=COLORES["texto_3"],
-            ).pack(side="left", expand=True, padx=8, pady=8)
+            ).pack(side="left", padx=2, pady=8)
 
         for i, row in enumerate(obtener_usuarios()):
             bg = COLORES["panel"] if i % 2 == 0 else COLORES["tarjeta"]
@@ -116,26 +124,27 @@ class UsersView(BaseView):
             f = ctk.CTkFrame(lista, fg_color=bg, corner_radius=6)
             f.pack(fill="x", pady=2, padx=4)
 
-            for val in [row["id"], row["usuario"], row["rol"]]:
+            for ci, val in enumerate([row["id"], row["usuario"], row["rol"]]):
                 ctk.CTkLabel(
                     f,
                     text=str(val),
+                    width=COL_USR_ANCHOS[ci],
                     font=FONT["tabla_dato"],
                     text_color=COLORES["texto_2"],
-                ).pack(side="left", expand=True, padx=8, pady=6)
+                ).pack(side="left", padx=2, pady=6)
 
             if row["usuario"] != "admin":
                 ctk.CTkButton(
                     f,
                     text="Eliminar",
-                    width=ACCION_BOTON_ANCHO + 14,
+                    width=COL_USR_ANCHOS[3],
                     height=BOTON_PEQUENO_ALTURA,
                     fg_color=COLORES["rojo"],
                     hover_color=COLORES["rojo_hover"],
                     font=FONT["pequeno"],
                     corner_radius=RADIO_BOTON_PEQUENO,
                     command=lambda uid=row["id"]: self._eliminar(uid),
-                ).pack(side="left", padx=8)
+                ).pack(side="left", padx=2)
 
             # High fidelity row hover binders
             def make_hover(row_frame, normal, hover):

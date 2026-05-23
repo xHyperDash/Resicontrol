@@ -11,9 +11,13 @@ from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 
-from config import DB_PATH
+from config import DB_PATH, BASE_DIR
 from models import obtener_historial
 from logger import logger
+
+
+REPORTES_DIR = os.path.join(BASE_DIR, "reportes")
+os.makedirs(REPORTES_DIR, exist_ok=True)
 
 
 def generar_pdf(fecha_ini: str, fecha_fin: str, tipo: str, usuario: str) -> tuple[bool, str]:
@@ -24,9 +28,11 @@ def generar_pdf(fecha_ini: str, fecha_fin: str, tipo: str, usuario: str) -> tupl
     try:
         filas = obtener_historial_between(fecha_ini, fecha_fin, tipo)
 
-        nombre_pdf = f"reporte_{fecha_ini}_a_{fecha_fin}.pdf"
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        nombre_pdf = f"reporte_{fecha_ini}_a_{fecha_fin}_{ts}.pdf"
+        ruta_pdf = os.path.join(REPORTES_DIR, nombre_pdf)
         doc = SimpleDocTemplate(
-            nombre_pdf, pagesize=letter,
+            ruta_pdf, pagesize=letter,
             leftMargin=36, rightMargin=36,
             topMargin=48, bottomMargin=36,
         )
@@ -74,40 +80,42 @@ def generar_pdf(fecha_ini: str, fecha_fin: str, tipo: str, usuario: str) -> tupl
 
         doc.build(elementos)
         logger.info(f"PDF generado: {nombre_pdf} ({len(filas)} registros)")
-        return True, nombre_pdf
+        return True, ruta_pdf
 
     except Exception as e:
         logger.error(f"Error generando PDF: {e}")
         return False, str(e)
 
 
-def generar_csv(fecha_ini: str, fecha_fin: str, tipo: str) -> tuple[bool, str]:
+def generar_csv(fecha_ini: str, fecha_fin: str, tipo: str, busq: str = "") -> tuple[bool, str]:
     """
     Genera un archivo CSV de accesos entre dos fechas.
     Retorna (éxito, ruta).
     """
     try:
-        filas = obtener_historial_between(fecha_ini, fecha_fin, tipo)
+        filas = obtener_historial_between(fecha_ini, fecha_fin, tipo, busq)
 
-        nombre_csv = f"reporte_{fecha_ini}_a_{fecha_fin}.csv"
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        nombre_csv = f"reporte_{fecha_ini}_a_{fecha_fin}_{ts}.csv"
+        ruta_csv = os.path.join(REPORTES_DIR, nombre_csv)
         encabezados = ["Tipo", "Nombre", "Cédula", "Placa", "Entrada", "Salida", "Operador"]
 
-        with open(nombre_csv, "w", newline="", encoding="utf-8") as f:
+        with open(ruta_csv, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(encabezados)
             for row in filas:
                 writer.writerow([str(v) if v is not None else "" for v in row])
 
         logger.info(f"CSV generado: {nombre_csv} ({len(filas)} registros)")
-        return True, nombre_csv
+        return True, ruta_csv
 
     except Exception as e:
         logger.error(f"Error generando CSV: {e}")
         return False, str(e)
 
 
-def obtener_historial_between(fecha_ini: str, fecha_fin: str, tipo: str) -> list:
-    """Obtiene historial filtrado por fechas y tipo."""
+def obtener_historial_between(fecha_ini: str, fecha_fin: str, tipo: str, busq: str = "") -> list:
+    """Obtiene historial filtrado por fechas, tipo y texto de búsqueda."""
     import sqlite3
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -116,11 +124,14 @@ def obtener_historial_between(fecha_ini: str, fecha_fin: str, tipo: str) -> list
         FROM accesos
         WHERE DATE(entrada) BETWEEN ? AND ?
     """
-    params = [fecha_ini, fecha_fin]
+    params: list = [fecha_ini, fecha_fin]
     if tipo != "Todos":
         query += " AND tipo=?"
         params.append(tipo)
+    if busq:
+        query += " AND (nombre LIKE ? OR cedula LIKE ? OR placa LIKE ?)"
+        params += [f"%{busq}%"] * 3
     query += " ORDER BY entrada DESC"
     rows = conn.execute(query, params).fetchall()
     conn.close()
-    return [dict(r) for r in rows]
+    return rows

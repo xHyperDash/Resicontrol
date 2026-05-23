@@ -116,16 +116,19 @@ class VisitorsView(BaseView):
         for i, fila_data in enumerate(obtener_visitantes_activos()):
             self._crear_fila_tabla(lista, fila_data, i)
 
+    COL_VISIT_ANCHOS = [180, 130, 100, 80, 160, 120, 70]
+
     def _crear_header_tabla(self, parent, columnas):
         header = ctk.CTkFrame(parent, fg_color=COLORES["tabla_header"], corner_radius=0)
         header.pack(fill="x")
-        for h in columnas:
+        for ci, h in enumerate(columnas):
             ctk.CTkLabel(
                 header,
                 text=h,
+                width=self.COL_VISIT_ANCHOS[ci],
                 font=FONT["tabla_cabecera"],
                 text_color=COLORES["texto_3"],
-            ).pack(side="left", expand=True, padx=8, pady=8)
+            ).pack(side="left", padx=2, pady=8)
 
     def _crear_fila_tabla(self, parent, datos, indice):
         bg = COLORES["panel"] if indice % 2 == 0 else COLORES["tarjeta"]
@@ -133,25 +136,26 @@ class VisitorsView(BaseView):
         f = ctk.CTkFrame(parent, fg_color=bg, corner_radius=6)
         f.pack(fill="x", pady=2, padx=4)
 
-        for key in ["nombre", "cedula", "placa", "unidad", "entrada", "operador"]:
+        for ci, key in enumerate(["nombre", "cedula", "placa", "unidad", "entrada", "operador"]):
             ctk.CTkLabel(
                 f,
                 text=str(datos.get(key, "—") or "—"),
+                width=self.COL_VISIT_ANCHOS[ci],
                 font=FONT["tabla_dato"],
                 text_color=COLORES["texto_2"],
-            ).pack(side="left", expand=True, padx=8, pady=6)
+            ).pack(side="left", padx=2, pady=6)
 
         ctk.CTkButton(
             f,
             text="Edit",
-            width=BOTON_PEQUENO_ANCHO,
+            width=self.COL_VISIT_ANCHOS[6],
             height=BOTON_PEQUENO_ALTURA,
             corner_radius=RADIO_BOTON_PEQUENO,
             fg_color=COLORES["amarillo"],
             hover_color=COLORES["hover_amarillo"],
             font=FONT["tabla_dato"],
             command=lambda d=datos: self._editar_dialog(d),
-        ).pack(side="left", padx=8, pady=4)
+        ).pack(side="left", padx=2, pady=4)
 
         # High fidelity hover bindings
         def bind_row(row_frame, normal_c, hover_c):

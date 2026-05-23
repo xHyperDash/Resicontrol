@@ -401,3 +401,54 @@ def obtener_metricas(conn=None):
         "ocupados": ocupados,
         "dentro": dentro,
     }
+
+
+def obtener_entradas_por_hora_hoy(conn=None):
+    """Entries grouped by hour for today, split by tipo."""
+    real_conn, should_close = _ensure_conn(conn)
+    hoy = datetime.now().strftime("%Y-%m-%d")
+    rows = real_conn.execute("""
+        SELECT strftime('%H', entrada) as hora, tipo, COUNT(*) as total
+        FROM accesos
+        WHERE DATE(entrada) = ?
+        GROUP BY hora, tipo
+        ORDER BY hora
+    """, (hoy,)).fetchall()
+    if should_close:
+        real_conn.close()
+    result: dict[str, dict[str, int]] = {}
+    for hora, tipo, total in rows:
+        result.setdefault(hora, {"residente": 0, "visitante": 0})
+        result[hora][tipo] = total
+    return result
+
+
+def obtener_incidentes_por_nivel(dias=7, conn=None):
+    """Incident count by level for the last N days."""
+    real_conn, should_close = _ensure_conn(conn)
+    rows = real_conn.execute("""
+        SELECT nivel, COUNT(*) as total
+        FROM incidentes
+        WHERE DATE(fecha) >= DATE('now', 'localtime', ?)
+        GROUP BY nivel
+    """, (f"-{dias} days",)).fetchall()
+    if should_close:
+        real_conn.close()
+    return {row["nivel"]: row["total"] for row in rows}
+
+
+def obtener_dentro_desglose(conn=None):
+    """Currently inside: count of residents vs visitors with no salida."""
+    real_conn, should_close = _ensure_conn(conn)
+    rows = real_conn.execute("""
+        SELECT tipo, COUNT(*) as total
+        FROM accesos
+        WHERE salida IS NULL
+        GROUP BY tipo
+    """).fetchall()
+    if should_close:
+        real_conn.close()
+    result: dict[str, int] = {"residente": 0, "visitante": 0}
+    for row in rows:
+        result[row["tipo"]] = row["total"]
+    return result
