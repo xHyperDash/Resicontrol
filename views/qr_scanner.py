@@ -4,7 +4,7 @@ import sqlite3
 from views.base import BaseView
 from config import COLORES, FONT, DB_PATH
 from config import PAD_CARD_X, PAD_CARD_Y, BOTON_SECUNDARIO_ANCHO
-from qr_manager import escanear_qr
+from models import registrar_entrada_residente
 
 CAMARA_DISPONIBLE = False
 try:
@@ -113,19 +113,21 @@ class QRScannerView(BaseView):
         conn.close()
 
         if row:
+            exito, msg = registrar_entrada_residente(placa, self.app.current_user)
             info = (
                 f"✅ ACCESO AUTORIZADO\n\n"
                 f"Residente: {row['nombre']}\n"
                 f"Unidad: {row['unidad']}\n"
                 f"Placa: {row['placa']}\n"
-                f"Teléfono: {row['telefono'] or '—'}"
+                f"Teléfono: {row['telefono'] or '—'}\n\n"
+                f"{'✅ Entrada registrada' if exito else f'⚠️ {msg}'}"
             )
             self.info_qr.configure(
                 text=info,
                 text_color=COLORES["verde_brillante"],
                 font=FONT["subtitulo"]
             )
-            self.notificar("ok", "Acceso autorizado", f"Unidad {row['unidad']} - {row['nombre']}")
+            self.notificar("ok" if exito else "aviso", "Acceso autorizado", msg)
         else:
             self.info_qr.configure(
                 text=f"❌ ACCESO DENEGADO\n\nPlaca {placa} no registrada",

@@ -4,7 +4,7 @@ import sqlite3
 from views.base import BaseView
 from config import COLORES, FONT, DB_PATH
 from config import FORMULARIO_ENTRADA_ANCHO, BOTON_SECUNDARIO_ANCHO, DIALOGO_ENTRADA_ANCHO
-from config import LISTA_VISITANTES_ALTURA, BOTON_PEQUENO_ANCHO, BOTON_PEQUENO_ALTURA
+from config import BOTON_PEQUENO_ANCHO, BOTON_PEQUENO_ALTURA
 from config import RADIO_BOTON_PEQUENO, RADIO_PANEL, PAD_LIST_BOTTOM
 from config import PAD_CARD_X, PAD_CARD_Y, PAD_FORM_X, PAD_FORM_Y, PAD_SECTION_LABEL_X
 from config import PAD_BUTTON_GAP_X, PAD_BUTTON_ROW_Y
@@ -13,7 +13,8 @@ from validators import validate_required, validate_cedula, validate_unidad, vali
 from models import (
     registrar_entrada_visitante,
     registrar_salida_visitante,
-    obtener_visitantes_activos,
+    registrar_entrada_residente,
+    registrar_salida_residente,
     editar_acceso,
 )
 
@@ -37,7 +38,9 @@ class VisitorsView(BaseView):
         card.pack(fill="x", padx=PAD_CARD_X, pady=PAD_CARD_Y)
 
         self._crear_formulario(card)
-        self._crear_tabla_activos(scroll)
+        self._tabla_frame = ctk.CTkFrame(scroll, fg_color="transparent")
+        self._tabla_frame.pack(fill="x")
+        self._crear_tabla_activos(self._tabla_frame)
 
     def _crear_formulario(self, parent):
         form = ctk.CTkFrame(parent, fg_color="transparent")
@@ -93,30 +96,40 @@ class VisitorsView(BaseView):
     def _crear_tabla_activos(self, parent):
         ctk.CTkLabel(
             parent,
-            text="Visitantes actualmente dentro",
+            text="Registro de visitantes",
             font=FONT["subtitulo"],
             text_color=COLORES["texto_3"],
         ).pack(anchor="w", padx=PAD_SECTION_LABEL_X, pady=(8, 4))
 
-        # Thin scrollbar configuration
-        lista = ctk.CTkScrollableFrame(
+        lista = ctk.CTkFrame(
             parent,
             fg_color=COLORES["tarjeta"],
             corner_radius=RADIO_PANEL,
-            height=LISTA_VISITANTES_ALTURA,
-            scrollbar_button_color=COLORES["borde"],
-            scrollbar_button_hover_color=COLORES["borde_hover"],
-            scrollbar_fg_color="transparent",
         )
         lista.pack(fill="x", padx=PAD_CARD_X, pady=PAD_LIST_BOTTOM)
 
-        encabezados = ["Nombre", "Cédula", "Placa", "Unidad", "Entrada", "Operador", "Acciones"]
+        encabezados = ["Nombre", "Cédula", "Placa", "Unidad", "Estado", "Entrada", "Operador", "Acciones"]
         self._crear_header_tabla(lista, encabezados)
 
-        for i, fila_data in enumerate(obtener_visitantes_activos()):
-            self._crear_fila_tabla(lista, fila_data, i)
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute("""
+            SELECT id, nombre, cedula, placa, invitado_por AS unidad,
+                   entrada, salida, operador
+            FROM accesos
+            WHERE tipo='visitante'
+              AND id IN (
+                SELECT MAX(id) FROM accesos WHERE tipo='visitante' GROUP BY cedula
+              )
+            ORDER BY entrada DESC
+            LIMIT 200
+        """ ).fetchall()
+        conn.close()
 
-    COL_VISIT_ANCHOS = [180, 130, 100, 80, 160, 120, 70]
+        for i, row in enumerate(rows):
+            self._crear_fila_tabla(lista, dict(row), i)
+
+    COL_VISIT_ANCHOS = [180, 130, 100, 80, 70, 160, 120, 90]
 
     def _crear_header_tabla(self, parent, columnas):
         header = ctk.CTkFrame(parent, fg_color=COLORES["tabla_header"], corner_radius=0)
@@ -133,10 +146,11 @@ class VisitorsView(BaseView):
     def _crear_fila_tabla(self, parent, datos, indice):
         bg = COLORES["panel"] if indice % 2 == 0 else COLORES["tarjeta"]
         hover_bg = COLORES["borde"]
+        dentro = datos.get("salida") is None
         f = ctk.CTkFrame(parent, fg_color=bg, corner_radius=6)
         f.pack(fill="x", pady=2, padx=4)
 
-        for ci, key in enumerate(["nombre", "cedula", "placa", "unidad", "entrada", "operador"]):
+        for ci, key in enumerate(["nombre", "cedula", "placa", "unidad"]):
             ctk.CTkLabel(
                 f,
                 text=str(datos.get(key, "—") or "—"),
@@ -145,19 +159,50 @@ class VisitorsView(BaseView):
                 text_color=COLORES["texto_2"],
             ).pack(side="left", padx=2, pady=6)
 
-        ctk.CTkButton(
+        ctk.CTkLabel(
             f,
+            text="Dentro" if dentro else "Fuera",
+            width=self.COL_VISIT_ANCHOS[4],
+            font=FONT["tabla_dato"],
+            text_color=COLORES["verde"] if dentro else COLORES["texto_3"],
+        ).pack(side="left", padx=2, pady=6)
+
+        for ci, key in enumerate(["entrada", "operador"], start=5):
+            ctk.CTkLabel(
+                f,
+                text=str(datos.get(key, "—") or "—"),
+                width=self.COL_VISIT_ANCHOS[ci],
+                font=FONT["tabla_dato"],
+                text_color=COLORES["texto_2"],
+            ).pack(side="left", padx=2, pady=6)
+
+        frame_acc = ctk.CTkFrame(f, fg_color="transparent")
+        frame_acc.pack(side="left", padx=2)
+
+        ctk.CTkButton(
+            frame_acc,
             text="Edit",
-            width=self.COL_VISIT_ANCHOS[6],
+            width=36,
             height=BOTON_PEQUENO_ALTURA,
             corner_radius=RADIO_BOTON_PEQUENO,
             fg_color=COLORES["amarillo"],
             hover_color=COLORES["hover_amarillo"],
             font=FONT["tabla_dato"],
             command=lambda d=datos: self._editar_dialog(d),
-        ).pack(side="left", padx=2, pady=4)
+        ).pack(side="left", padx=1, pady=4)
 
-        # High fidelity hover bindings
+        ctk.CTkButton(
+            frame_acc,
+            text="Select",
+            width=36,
+            height=BOTON_PEQUENO_ALTURA,
+            corner_radius=RADIO_BOTON_PEQUENO,
+            fg_color=COLORES["azul"],
+            hover_color=COLORES["azul_hover"],
+            font=FONT["tabla_dato"],
+            command=lambda d=datos: self._seleccionar_para_salida(d),
+        ).pack(side="left", padx=1, pady=4)
+
         def bind_row(row_frame, normal_c, hover_c):
             def enter(e):
                 if row_frame.winfo_exists():
@@ -174,15 +219,51 @@ class VisitorsView(BaseView):
 
         bind_row(f, bg, hover_bg)
 
-    def _registrar_entrada(self):
-        if not self._consent.get():
-            self.notificar("aviso", "Atención", "Debe autorizar el tratamiento de datos")
-            return
+    def _seleccionar_para_salida(self, datos):
+        nombre = str(datos.get("nombre") or "")
+        cedula = str(datos.get("cedula") or "")
+        placa = str(datos.get("placa") or "")
+        unidad = str(datos.get("unidad") or "")
+        self._entradas["Nombre completo *"].delete(0, "end")
+        self._entradas["Nombre completo *"].insert(0, nombre)
+        self._entradas["Cédula *"].delete(0, "end")
+        self._entradas["Cédula *"].insert(0, cedula)
+        self._entradas["Placa (opcional)"].delete(0, "end")
+        self._entradas["Placa (opcional)"].insert(0, placa)
+        self._entradas["Invitado por (unidad) *"].delete(0, "end")
+        self._entradas["Invitado por (unidad) *"].insert(0, unidad)
+        self.notificar("ok", "Seleccionado", "Datos cargados en el formulario")
 
+    def _refrescar_tabla(self):
+        for w in self._tabla_frame.winfo_children():
+            w.destroy()
+        self._crear_tabla_activos(self._tabla_frame)
+
+    def _registrar_entrada(self):
         nombre = self._entradas["Nombre completo *"].get().strip()
         cedula = self._entradas["Cédula *"].get().strip()
         placa = self._entradas["Placa (opcional)"].get().strip().upper()
         unidad = self._entradas["Invitado por (unidad) *"].get().strip()
+
+        if placa:
+            conn = sqlite3.connect(DB_PATH)
+            es_residente = conn.execute(
+                "SELECT id FROM residentes WHERE placa=? AND activo=1", (placa,)
+            ).fetchone()
+            conn.close()
+            if es_residente:
+                if not validate_unidad(unidad):
+                    self.notificar("error", "Error", "Unidad es obligatoria")
+                    return
+                exito, msg = registrar_entrada_residente(placa, self.app.current_user)
+                self.notificar("ok" if exito else "error", "Entrada Residente", msg)
+                if exito:
+                    self._refrescar_tabla()
+                return
+
+        if not self._consent.get():
+            self.notificar("aviso", "Atención", "Debe autorizar el tratamiento de datos")
+            return
 
         if not validate_required(nombre, "Nombre")[0]:
             self.notificar("error", "Error", "Nombre es obligatorio")
@@ -200,25 +281,56 @@ class VisitorsView(BaseView):
         exito, msg = registrar_entrada_visitante(nombre, cedula, placa, unidad, self.app.current_user)
         self.notificar("ok" if exito else "error", "Registro", msg)
         if exito:
-            self._recargar()
+            self._refrescar_tabla()
 
     def _registrar_salida(self):
         cedula = self._entradas["Cédula *"].get().strip()
         placa = self._entradas["Placa (opcional)"].get().strip().upper()
 
+        if placa:
+            conn = sqlite3.connect(DB_PATH)
+            es_residente = conn.execute(
+                "SELECT id FROM residentes WHERE placa=? AND activo=1", (placa,)
+            ).fetchone()
+            if not es_residente:
+                activo = conn.execute(
+                    "SELECT id FROM accesos WHERE placa=? AND salida IS NULL AND tipo='visitante'",
+                    (placa,),
+                ).fetchone()
+            conn.close()
+            if es_residente:
+                exito, msg = registrar_salida_residente(placa, self.app.current_user)
+                self.notificar("ok" if exito else "aviso", "Salida Residente", msg)
+                if exito:
+                    self._refrescar_tabla()
+                return
+        else:
+            activo = None
+
         if not cedula and not placa:
             self.notificar("aviso", "Atención", "Ingrese cédula o placa para registrar salida")
             return
 
+        if not activo:
+            conn = sqlite3.connect(DB_PATH)
+            activo = conn.execute(
+                "SELECT id FROM accesos WHERE (cedula=? OR placa=?) AND salida IS NULL AND tipo='visitante'",
+                (cedula, placa),
+            ).fetchone()
+            conn.close()
+            if not activo:
+                self.notificar("aviso", "Atención", "El visitante ya no se encuentra dentro")
+                return
+
         exito, msg = registrar_salida_visitante(cedula, placa, self.app.current_user)
         self.notificar("ok" if exito else "aviso", "Salida", msg)
         if exito:
-            self._recargar()
+            self._refrescar_tabla()
 
     def _editar_dialog(self, datos: dict):
         dialog = ctk.CTkToplevel(self.app)
         dialog.title("Editar Visitante")
-        dialog.geometry("420x420")
+        dialog.geometry("420x500")
         dialog.configure(fg_color=COLORES["panel"])
         dialog.transient(self.app)
         dialog.grab_set()
@@ -237,6 +349,7 @@ class VisitorsView(BaseView):
             ("Nombre:", "nombre", datos.get("nombre", "")),
             ("Cédula:", "cedula", datos.get("cedula", "")),
             ("Placa:", "placa", datos.get("placa", "") or ""),
+            ("Unidad:", "unidad", str(datos.get("unidad") or "")),
         ]
 
         entradas = {}
@@ -257,6 +370,7 @@ class VisitorsView(BaseView):
             nombre = entradas["nombre"].get().strip()
             cedula = entradas["cedula"].get().strip()
             placa = entradas["placa"].get().strip().upper()
+            unidad = entradas["unidad"].get().strip()
             if not nombre or not cedula:
                 self.notificar("error", "Error", "Nombre y cédula son obligatorios")
                 return
@@ -265,12 +379,12 @@ class VisitorsView(BaseView):
                 conn = sqlite3.connect(DB_PATH)
                 conn.row_factory = sqlite3.Row
                 row = conn.execute(
-                    "SELECT id FROM accesos WHERE cedula=? AND salida IS NULL AND tipo='visitante'",
+                    "SELECT id FROM accesos WHERE cedula=? AND tipo='visitante' ORDER BY entrada DESC LIMIT 1",
                     (cedula,),
                 ).fetchone()
                 conn.close()
                 acc_id = row["id"] if row else 0
-            exito, msg = editar_acceso(acc_id, nombre, cedula, placa, self.app.current_user)
+            exito, msg = editar_acceso(acc_id, nombre, cedula, placa, unidad, self.app.current_user)
             self.notificar("ok" if exito else "error", "Editar Visitante", msg)
             if exito:
                 dialog.destroy()

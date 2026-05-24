@@ -42,6 +42,18 @@ def create_sidebar_menu(
 ) -> dict[str, dict]:
     menu_data: dict[str, dict] = {}
 
+    def _confirmar_cierre():
+        from CTkMessagebox import CTkMessagebox
+        res = CTkMessagebox(
+            title="Cerrar Sesión",
+            message="¿Está seguro de que desea cerrar sesión?",
+            icon="question",
+            option_1="Cancelar",
+            option_2="Cerrar sesión",
+        )
+        if res.get() == "Cerrar sesión":
+            app.mostrar_login()
+
     action_map = {
         "inicio": app._ir_inicio,
         "visitantes": app._ir_visitantes,
@@ -53,7 +65,7 @@ def create_sidebar_menu(
         "usuarios": app._ir_usuarios,
         "qr": app._ir_qr,
         "backups": app._ir_backups,
-        "logout": app.mostrar_login,
+        "logout": _confirmar_cierre,
     }
 
     for texto, icono, cmd_key in menu_items:
@@ -74,7 +86,7 @@ def create_sidebar_menu(
             corner_radius=8,
             font=FONT["cuerpo_pequeno"],
             text_color=COLORES["texto_2"],
-            command=lambda t=texto, a=accion: app._cambiar_pagina(t, a),
+            command=lambda t=texto, a=accion, p=es_peligro: _confirmar_cierre() if p else app._cambiar_pagina(t, a),
         )
         btn.pack(fill="x", padx=(10, 6), pady=3)
 

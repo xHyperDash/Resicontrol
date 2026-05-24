@@ -51,6 +51,7 @@ class IncidentsView(BaseView):
             card,
             values=["bajo", "medio", "alto"],
             width=200,
+            state="readonly",
             fg_color=COLORES["panel"],
             border_color=COLORES["borde"],
             button_color=COLORES["tarjeta"],
@@ -60,6 +61,7 @@ class IncidentsView(BaseView):
             dropdown_text_color=COLORES["texto"],
         )
         self._inc_nivel.pack(anchor="w", padx=20, pady=(0, 16))
+        self._inc_nivel.set("Selecciona uno")
 
         self.boton(
             card,
@@ -152,6 +154,10 @@ class IncidentsView(BaseView):
 
         if not validate_required(desc, "Descripción")[0]:
             self.notificar("error", "Error", "La descripción es obligatoria")
+            return
+
+        if nivel == "Selecciona uno":
+            self.notificar("aviso", "Nivel requerido", "Seleccione un nivel de alerta")
             return
 
         registrar_incidente(desc, nivel, self.app.current_user)

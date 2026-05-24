@@ -29,6 +29,7 @@ def temp_conn():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             unidad TEXT NOT NULL,
             nombre TEXT NOT NULL,
+            cedula TEXT,
             telefono TEXT,
             email TEXT,
             placa TEXT NOT NULL UNIQUE,
@@ -274,7 +275,7 @@ class TestModels:
         from models import crear_residente
         create_tables(temp_conn.cursor())
         temp_conn.commit()
-        ok, msg = crear_residente("301", "Juan Perez", "3001112222", "juan@mail.com", "ABC123", conn=temp_conn)
+        ok, msg = crear_residente("301", "Juan Perez", "123456789", "3001112222", "juan@mail.com", "ABC123", conn=temp_conn)
         assert ok is True
         row = temp_conn.execute("SELECT nombre, unidad FROM residentes WHERE placa='ABC123'").fetchone()
         assert row["nombre"] == "Juan Perez"
@@ -286,8 +287,8 @@ class TestModels:
         from models import crear_residente
         create_tables(temp_conn.cursor())
         temp_conn.commit()
-        crear_residente("301", "Juan", "3000000", "j@mail.com", "ABC123", conn=temp_conn)
-        ok, msg = crear_residente("302", "Pedro", "3000001", "p@mail.com", "ABC123", conn=temp_conn)
+        crear_residente("301", "Juan", "123456789", "3000000", "j@mail.com", "ABC123", conn=temp_conn)
+        ok, msg = crear_residente("302", "Pedro", "987654321", "3000001", "p@mail.com", "ABC123", conn=temp_conn)
         assert ok is False
         cerrar_conn(temp_conn)
 
@@ -370,7 +371,7 @@ class TestModels:
         from models import crear_residente, eliminar_residente
         create_tables(temp_conn.cursor())
         temp_conn.commit()
-        crear_residente("301", "Juan", "300000", "j@mail.com", "ABC123", conn=temp_conn)
+        crear_residente("301", "Juan", "123456789", "300000", "j@mail.com", "ABC123", conn=temp_conn)
         eliminar_residente(1, conn=temp_conn)
         row = temp_conn.execute("SELECT activo FROM residentes WHERE id=1").fetchone()
         assert row["activo"] == 0
@@ -381,8 +382,8 @@ class TestModels:
         from models import crear_residente, editar_residente
         create_tables(temp_conn.cursor())
         temp_conn.commit()
-        crear_residente("301", "Juan", "300000", "j@mail.com", "ABC123", conn=temp_conn)
-        ok, msg = editar_residente(1, "302", "Juan Modificado", "300001", "nuevo@mail.com", "DEF456", conn=temp_conn)
+        crear_residente("301", "Juan", "123456789", "300000", "j@mail.com", "ABC123", conn=temp_conn)
+        ok, msg = editar_residente(1, "302", "Juan Modificado", "987654321", "300001", "nuevo@mail.com", "DEF456", conn=temp_conn)
         assert ok is True
         row = temp_conn.execute("SELECT nombre, unidad FROM residentes WHERE id=1").fetchone()
         assert row["nombre"] == "Juan Modificado"

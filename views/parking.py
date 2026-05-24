@@ -165,6 +165,7 @@ class ParkingView(BaseView):
         self._park_numero = ctk.CTkComboBox(
             fila,
             width=160,
+            state="readonly",
             values=obtener_parqueaderos_libres_visitante(),
             fg_color=COLORES["panel"],
             border_color=COLORES["borde"],
@@ -175,6 +176,7 @@ class ParkingView(BaseView):
             dropdown_text_color=COLORES["texto"],
         )
         self._park_numero.pack(side="left", padx=(0, 12))
+        self._park_numero.set("Selecciona uno")
 
         self.boton(fila, "Asignar", self._asignar, width=140).pack(side="left")
 
@@ -182,7 +184,7 @@ class ParkingView(BaseView):
         placa = self._park_placa.get().strip().upper()
         numero = self._park_numero.get().strip()
 
-        if not placa or not numero or numero == "Sin espacio":
+        if not placa or not numero or numero in ("Sin espacio", "Selecciona uno"):
             self.notificar("error", "Error", "Ingrese placa y seleccione un parqueadero")
             return
 

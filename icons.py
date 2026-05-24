@@ -26,6 +26,7 @@ _GLYPH_MAP = {
     "cerrar_sesion": 0x1F6AA,
     "qr":           0x26A1,
     "escaneo":      0x1F4F7,
+    "buscar":       0x1F50D,
 }
 
 

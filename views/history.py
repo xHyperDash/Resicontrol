@@ -32,6 +32,7 @@ class HistoryView(BaseView):
             filtros,
             values=["Todos", "residente", "visitante"],
             width=160,
+            state="readonly",
             fg_color=COLORES["panel"],
             border_color=COLORES["borde"],
             button_color=COLORES["tarjeta"],
@@ -41,6 +42,7 @@ class HistoryView(BaseView):
             dropdown_text_color=COLORES["texto"],
         )
         self._hist_tipo.pack(side="left", padx=(0, 10))
+        self._hist_tipo.set("Selecciona uno")
 
         self.boton(filtros, "Filtrar", self._filtrar, width=120).pack(side="left")
         self.boton(
@@ -126,13 +128,19 @@ class HistoryView(BaseView):
             make_hover(f, bg, hover_bg)
 
     def _filtrar(self):
-        self._renderizar(self._hist_busq.get().strip(), self._hist_tipo.get())
+        tipo = self._hist_tipo.get()
+        if tipo == "Selecciona uno":
+            tipo = "Todos"
+        self._renderizar(self._hist_busq.get().strip(), tipo)
 
     def _exportar_csv(self):
         busq = self._hist_busq.get().strip()
+        tipo = self._hist_tipo.get()
+        if tipo == "Selecciona uno":
+            tipo = "Todos"
         fecha_ini = "2020-01-01"
         fecha_fin = datetime.now().strftime("%Y-%m-%d")
-        ok, ruta = generar_csv(fecha_ini, fecha_fin, self._hist_tipo.get(), busq)
+        ok, ruta = generar_csv(fecha_ini, fecha_fin, tipo, busq)
         if ok:
             abrir_archivo_qr(ruta)
         self.notificar("ok" if ok else "error", "Exportar CSV", ruta)
@@ -185,7 +193,7 @@ class HistoryView(BaseView):
             if not nombre or not cedula:
                 self.notificar("error", "Error", "Nombre y cédula son obligatorios")
                 return
-            exito, msg = editar_acceso(datos["id"], nombre, cedula, placa, self.app.current_user)
+            exito, msg = editar_acceso(datos["id"], nombre, cedula, placa, "", self.app.current_user)
             self.notificar("ok" if exito else "error", "Editar", msg)
             if exito:
                 dialog.destroy()

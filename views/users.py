@@ -71,6 +71,7 @@ class UsersView(BaseView):
             values=["admin", "operador", "residente"],
             width=320,
             fg_color=COLORES["panel"],
+            state="readonly",
             border_color=COLORES["borde"],
             button_color=COLORES["tarjeta"],
             button_hover_color=COLORES["borde"],
@@ -79,6 +80,7 @@ class UsersView(BaseView):
             dropdown_text_color=COLORES["texto"],
         )
         self._usr_rol.grid(row=6, column=0, sticky="w", pady=(0, 16))
+        self._usr_rol.set("Selecciona uno")
 
         self.boton(parent, "Crear Usuario", self._crear, width=BOTON_SECUNDARIO_ANCHO).pack(pady=PAD_CARD_Y)
 
@@ -180,6 +182,10 @@ class UsersView(BaseView):
 
         if not usuario or not pwd:
             self.notificar("error", "Error", "Usuario y contraseña son obligatorios")
+            return
+
+        if rol == "Selecciona uno":
+            self.notificar("aviso", "Rol requerido", "Seleccione un rol para el usuario")
             return
 
         ok, msg = validate_password_strength(pwd)

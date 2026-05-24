@@ -1,0 +1,28 @@
+Tipo,Nombre,Cédula,Placa,Entrada,Salida,Operador
+residente,Kevin,8462163467,DJA456,2026-05-24 04:00:38,,admin
+residente,Kevin,,DJA456,2026-05-24 03:56:08,2026-05-24 04:00:17,admin
+residente,Kevin,,DJA456,2026-05-24 03:54:42,2026-05-24 03:55:17,admin
+visitante,Kelly,15975632684,XYZ789,2026-05-24 03:37:06,,admin
+visitante,Asignacion directa,4578349932,SDF908,2026-05-24 03:33:22,,admin
+visitante,Homelander,514986345,,2026-05-24 03:32:50,,admin
+visitante,Homelander,514986345,,2026-05-24 03:30:09,2026-05-24 03:32:47,admin
+visitante,Homelander,514986345,,2026-05-24 03:29:19,2026-05-24 03:29:44,admin
+visitante,Homelander,514986345,,2026-05-24 03:29:08,2026-05-24 03:29:15,admin
+visitante,Homelander,514986345,,2026-05-24 03:26:41,2026-05-24 03:26:54,admin
+visitante,Ingrid,987951753,JHG456,2026-05-24 03:20:26,,admin
+residente,Lina Cecilia,,NJU159,2026-05-24 01:41:34,,admin
+residente,Eduardo Andrés,,YTR456,2026-05-24 01:41:20,,admin
+residente,Antonio Enrique,,PDW096,2026-05-24 01:41:05,,admin
+residente,Eduardo Andrés,,YTR456,2026-05-24 01:23:19,2026-05-24 01:26:09,admin
+residente,Antonio Enrique,,PDW096,2026-05-24 01:22:54,2026-05-24 01:26:01,admin
+residente,Antonio Enrique,,PDW096,2026-05-24 01:18:10,2026-05-24 01:19:10,admin
+residente,Antonio Enrique,,PDW096,2026-05-24 01:08:00,2026-05-24 01:18:06,admin
+residente,Lina Cecilia,,NJU159,2026-05-23 20:39:48,2026-05-24 01:26:17,admin
+residente,Juan Pérez,,ABC123,2026-05-23 20:39:30,,admin
+residente,Eduardo Andrés,,YTR456,2026-05-23 20:30:23,2026-05-24 01:23:06,admin
+residente,Eduardo Andrés,,YTR456,2026-05-23 20:29:54,2026-05-24 01:17:09,admin
+visitante,Homelander,514986345,,2026-05-23 03:55:37,2026-05-24 01:48:39,admin
+visitante,Asignacion directa,4578349932,SDF908,2026-05-23 02:12:02,2026-05-24 03:19:42,admin
+visitante,Juan Benito,654123987,QWE456,2026-05-23 01:50:29,,admin
+visitante,Diego,123654789,SDF908,2026-05-23 01:36:36,,admin
+visitante,Kelly,15975632684,XYZ789,2026-05-13 17:05:41,2026-05-24 02:03:51,admin

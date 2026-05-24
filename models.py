@@ -91,12 +91,12 @@ def eliminar_usuario(uid, conn=None):
 
 # ─── Residentes ───────────────────────────────────────────────────────────────
 
-def crear_residente(unidad, nombre, telefono, email, placa, conn=None):
+def crear_residente(unidad, nombre, cedula, telefono, email, placa, conn=None):
     real_conn, should_close = _ensure_conn(conn)
     try:
         real_conn.execute(
-            "INSERT INTO residentes (unidad, nombre, telefono, email, placa) VALUES (?,?,?,?,?)",
-            (unidad, nombre, telefono or None, email or None, placa.upper()),
+            "INSERT INTO residentes (unidad, nombre, cedula, telefono, email, placa) VALUES (?,?,?,?,?,?)",
+            (unidad, nombre, cedula or None, telefono or None, email or None, placa.upper()),
         )
         real_conn.commit()
         logger.info(f"Residente creado: {nombre}")
@@ -110,11 +110,11 @@ def crear_residente(unidad, nombre, telefono, email, placa, conn=None):
 
 def obtener_residentes(filtro="", conn=None):
     real_conn, should_close = _ensure_conn(conn)
-    query = "SELECT id, unidad, nombre, telefono, email, placa, qr_code, activo FROM residentes WHERE activo=1"
+    query = "SELECT id, unidad, nombre, cedula, telefono, email, placa, qr_code, activo FROM residentes WHERE activo=1"
     params = []
     if filtro:
-        query += " AND (nombre LIKE ? OR unidad LIKE ? OR placa LIKE ?)"
-        params = [f"%{filtro}%"] * 3
+        query += " AND (nombre LIKE ? OR unidad LIKE ? OR placa LIKE ? OR cedula LIKE ?)"
+        params = [f"%{filtro}%"] * 4
     query += " ORDER BY nombre"
     rows = real_conn.execute(query, params).fetchall()
     if should_close:
@@ -125,7 +125,7 @@ def obtener_residentes(filtro="", conn=None):
 def obtener_residente(rid, conn=None):
     real_conn, should_close = _ensure_conn(conn)
     row = real_conn.execute(
-        "SELECT id, unidad, nombre, telefono, email, placa FROM residentes WHERE id = ?",
+        "SELECT id, unidad, nombre, cedula, telefono, email, placa FROM residentes WHERE id = ?",
         (rid,),
     ).fetchone()
     if should_close:
@@ -133,12 +133,12 @@ def obtener_residente(rid, conn=None):
     return dict(row) if row else None
 
 
-def editar_residente(rid, unidad, nombre, telefono, email, placa, conn=None):
+def editar_residente(rid, unidad, nombre, cedula, telefono, email, placa, conn=None):
     real_conn, should_close = _ensure_conn(conn)
     try:
         real_conn.execute(
-            "UPDATE residentes SET unidad=?, nombre=?, telefono=?, email=?, placa=? WHERE id=?",
-            (unidad, nombre, telefono or None, email or None, placa.upper(), rid),
+            "UPDATE residentes SET unidad=?, nombre=?, cedula=?, telefono=?, email=?, placa=? WHERE id=?",
+            (unidad, nombre, cedula or None, telefono or None, email or None, placa.upper(), rid),
         )
         real_conn.commit()
         logger.info(f"Residente editado: id={rid}")
@@ -226,20 +226,58 @@ def registrar_entrada_residente(placa, operador, conn=None):
     real_conn, should_close = _ensure_conn(conn)
     try:
         row = real_conn.execute(
-            "SELECT nombre, unidad FROM residentes WHERE placa=? AND activo=1",
+            "SELECT nombre, cedula, unidad FROM residentes WHERE placa=? AND activo=1",
             (placa.upper(),),
         ).fetchone()
 
         if not row:
             return False, "Placa no encontrada en residentes activos"
 
+        active = real_conn.execute(
+            "SELECT id FROM accesos WHERE placa=? AND salida IS NULL AND tipo='residente'",
+            (placa.upper(),),
+        ).fetchone()
+        if active:
+            return False, "El residente ya tiene una entrada activa"
+
         ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         real_conn.execute(
             "INSERT INTO accesos (tipo, nombre, cedula, placa, invitado_por, entrada, operador) VALUES (?,?,?,?,?,?,?)",
-            ("residente", row["nombre"], None, placa.upper(), str(row["unidad"]), ahora, operador),
+            ("residente", row["nombre"], row["cedula"], placa.upper(), str(row["unidad"]), ahora, operador),
         )
         real_conn.commit()
         return True, f"Entrada registrada: {row['nombre']}"
+    finally:
+        if should_close:
+            real_conn.close()
+
+
+def registrar_salida_residente(placa, operador, conn=None):
+    real_conn, should_close = _ensure_conn(conn)
+    try:
+        placa_upper = placa.upper()
+        row = real_conn.execute(
+            "SELECT id, placa, nombre FROM accesos WHERE placa=? AND salida IS NULL AND tipo='residente'",
+            (placa_upper,),
+        ).fetchone()
+        if not row:
+            return False, "No hay entrada activa para esta placa de residente"
+
+        ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        real_conn.execute(
+            "UPDATE accesos SET salida=? WHERE id=?",
+            (ahora, row["id"]),
+        )
+
+        if row["placa"]:
+            real_conn.execute(
+                "UPDATE parqueaderos SET estado='libre', placa=NULL, desde=NULL WHERE placa=?",
+                (row["placa"],),
+            )
+
+        real_conn.commit()
+        logger.info(f"Salida residente: placa={placa_upper}")
+        return True, f"Salida Registrada de {row['nombre']}"
     finally:
         if should_close:
             real_conn.close()
@@ -274,13 +312,13 @@ def obtener_historial(busq="", tipo="Todos", conn=None):
     return [dict(r) for r in rows]
 
 
-def editar_acceso(ace_id, nombre, cedula, placa, modificado_por, conn=None):
+def editar_acceso(ace_id, nombre, cedula, placa, invitado_por, modificado_por, conn=None):
     real_conn, should_close = _ensure_conn(conn)
     try:
         ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         real_conn.execute(
-            "UPDATE accesos SET nombre=?, cedula=?, placa=?, modificado_por=?, modificado_en=? WHERE id=? AND salida IS NULL",
-            (nombre, cedula, placa.upper() if placa else None, modificado_por, ahora, ace_id),
+            "UPDATE accesos SET nombre=?, cedula=?, placa=?, invitado_por=?, modificado_por=?, modificado_en=? WHERE id=?",
+            (nombre, cedula, placa.upper() if placa else None, invitado_por, modificado_por, ahora, ace_id),
         )
         real_conn.commit()
         logger.info(f"Acceso editado: id={ace_id} por {modificado_por}")

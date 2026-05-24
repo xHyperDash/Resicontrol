@@ -26,6 +26,7 @@ def create_tables(cursor: sqlite3.Cursor):
             id        INTEGER PRIMARY KEY AUTOINCREMENT,
             unidad    TEXT    NOT NULL,
             nombre    TEXT    NOT NULL,
+            cedula    TEXT,
             telefono  TEXT,
             email     TEXT,
             placa     TEXT    NOT NULL UNIQUE,
@@ -87,6 +88,11 @@ def create_indexes(cursor: sqlite3.Cursor):
 
 def add_audit_columns(cursor: sqlite3.Cursor):
     """Agrega columnas de auditoria si no existen (migracion)."""
+    try:
+        cursor.execute("ALTER TABLE residentes ADD COLUMN cedula TEXT")
+        logger.info("Columna 'cedula' agregada a residentes")
+    except sqlite3.OperationalError:
+        pass
     try:
         cursor.execute("ALTER TABLE accesos ADD COLUMN modificado_por TEXT")
         logger.info("Columna 'modificado_por' agregada a accesos")
