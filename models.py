@@ -359,6 +359,79 @@ def obtener_parqueaderos_libres_visitante(conn=None):
     return [r["numero"] for r in rows]
 
 
+def obtener_total_por_tipo(tipo, conn=None):
+    real_conn, should_close = _ensure_conn(conn)
+    count = real_conn.execute("SELECT COUNT(*) FROM parqueaderos WHERE tipo=?", (tipo,)).fetchone()[0]
+    if should_close:
+        real_conn.close()
+    return count
+
+
+def obtener_siguiente_numero(tipo, conn=None):
+    real_conn, should_close = _ensure_conn(conn)
+    row = real_conn.execute(
+        "SELECT numero FROM parqueaderos WHERE tipo=? ORDER BY numero DESC LIMIT 1",
+        (tipo,),
+    ).fetchone()
+    if should_close:
+        real_conn.close()
+    if not row:
+        return 1
+    prefix = "R" if tipo == "residente" else "V"
+    last_num = int(row["numero"].replace(prefix, ""))
+    return last_num + 1
+
+
+MAX_PARKING_POR_TIPO = 100
+
+
+def agregar_parqueadero(tipo, conn=None):
+    real_conn, should_close = _ensure_conn(conn)
+    try:
+        count = obtener_total_por_tipo(tipo, conn=real_conn)
+        if count >= MAX_PARKING_POR_TIPO:
+            return False, f"Límite alcanzado ({MAX_PARKING_POR_TIPO} por tipo)"
+
+        prefix = "R" if tipo == "residente" else "V"
+        next_num = obtener_siguiente_numero(tipo, conn=real_conn)
+        numero = f"{prefix}{next_num:02d}"
+        real_conn.execute(
+            "INSERT INTO parqueaderos (numero, tipo) VALUES (?,?)",
+            (numero, tipo),
+        )
+        real_conn.commit()
+        logger.info(f"Parqueadero {numero} creado ({tipo})")
+        return True, f"Parqueadero {numero} creado"
+    except Exception as e:
+        logger.error(f"Error creando parqueadero: {e}")
+        return False, str(e)
+    finally:
+        if should_close:
+            real_conn.close()
+
+
+def eliminar_parqueadero(numero, conn=None):
+    real_conn, should_close = _ensure_conn(conn)
+    try:
+        row = real_conn.execute(
+            "SELECT estado FROM parqueaderos WHERE numero=?", (numero,)
+        ).fetchone()
+        if not row:
+            return False, "Parqueadero no encontrado"
+        if row["estado"] == "ocupado":
+            return False, "No se puede eliminar un parqueadero ocupado"
+        real_conn.execute("DELETE FROM parqueaderos WHERE numero=?", (numero,))
+        real_conn.commit()
+        logger.info(f"Parqueadero {numero} eliminado")
+        return True, f"Parqueadero {numero} eliminado"
+    except Exception as e:
+        logger.error(f"Error eliminando parqueadero {numero}: {e}")
+        return False, str(e)
+    finally:
+        if should_close:
+            real_conn.close()
+
+
 def asignar_parqueadero(numero, placa, operador, conn=None):
     real_conn, should_close = _ensure_conn(conn)
     try:

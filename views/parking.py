@@ -10,6 +10,9 @@ from models import (
     obtener_parqueaderos_resumen,
     obtener_parqueaderos_por_tipo,
     obtener_parqueaderos_libres_visitante,
+    obtener_total_por_tipo,
+    agregar_parqueadero,
+    eliminar_parqueadero,
     asignar_parqueadero,
     liberar_parqueadero,
 )
@@ -22,17 +25,43 @@ class ParkingView(BaseView):
         super().__init__(parent, app)
         self.contenido = app.contenido
         self.pack(fill="both", expand=True)
+        if not hasattr(self.app, "_parking_selected"):
+            self.app._parking_selected = None
+        self._slot_btns: dict[str, ctk.CTkButton] = {}
         self._crear_vista()
 
     def _crear_vista(self):
-        self.label_seccion(self, "Parqueaderos")
-        self._renderizar_resumen()
-        self._renderizar_grids()
-        self._crear_asignacion()
+        scroll = ctk.CTkScrollableFrame(self, fg_color="transparent")
+        scroll.pack(fill="both", expand=True)
 
-    def _renderizar_resumen(self):
+        self.label_seccion(scroll, "Parqueaderos")
+        self._renderizar_resumen(scroll)
+        self._crear_toolbar(scroll)
+        self._renderizar_grids(scroll)
+        self._crear_asignacion(scroll)
+
+    def _crear_toolbar(self, parent):
+        bar = ctk.CTkFrame(parent, fg_color="transparent")
+        bar.pack(fill="x", padx=PAD_CARD_X, pady=(0, 8))
+        self._eliminar_btn = ctk.CTkButton(
+            bar,
+            text="✕ Eliminar seleccionado",
+            width=160,
+            height=30,
+            corner_radius=RADIO_BOTON_PEQUENO,
+            fg_color=COLORES["rojo"],
+            hover_color=COLORES["rojo_hover"],
+            font=FONT["cuerpo_pequeno"],
+            state="disabled",
+            command=self._eliminar_seleccionado,
+        )
+        self._eliminar_btn.pack(side="left")
+        if self.app._parking_selected:
+            self._eliminar_btn.configure(state="normal")
+
+    def _renderizar_resumen(self, parent):
         res = obtener_parqueaderos_resumen()
-        res_frame = ctk.CTkFrame(self, fg_color="transparent")
+        res_frame = ctk.CTkFrame(parent, fg_color="transparent")
         res_frame.pack(fill="x", padx=PAD_CARD_X, pady=(0, 16))
 
         for titulo, valor, color in [
@@ -55,21 +84,37 @@ class ParkingView(BaseView):
                 c, text=valor, font=FONT["tarjeta_valor"], text_color=color
             ).pack(pady=(0, 12))
 
-    def _renderizar_grids(self):
-        mapa = self.tarjeta(self)
+    def _renderizar_grids(self, parent):
+        mapa = self.tarjeta(parent)
         mapa.pack(fill="both", expand=True, padx=PAD_CARD_X, pady=8)
 
-        # Residentes Grid Header
-        ctk.CTkLabel(
-            mapa,
-            text="ZONA RESIDENTES (R01 - R10)",
-            font=FONT["titulo_seccion"],
-            text_color=COLORES["texto_3"],
-        ).pack(anchor="w", padx=24, pady=(16, 4))
+        def build_zone(tipo, label):
+            total = obtener_total_por_tipo(tipo)
+            header = ctk.CTkFrame(mapa, fg_color="transparent")
+            header.pack(fill="x", padx=24, pady=(16, 4))
+            ctk.CTkLabel(
+                header,
+                text=f"ZONA {label} ({total} espacios)",
+                font=FONT["titulo_seccion"],
+                text_color=COLORES["texto_3"],
+            ).pack(side="left")
 
-        self._grid_parqueaderos(mapa, "residente")
+            ctk.CTkButton(
+                header,
+                text="+ Agregar",
+                width=100,
+                height=28,
+                corner_radius=RADIO_BOTON_PEQUENO,
+                fg_color=COLORES["verde"],
+                hover_color=COLORES["verde_hover"],
+                font=FONT["cuerpo_pequeno"],
+                command=lambda t=tipo: self._agregar_espacio(t),
+            ).pack(side="right", padx=(0, 4))
 
-        # Access road / Street visual separator
+            self._grid_parqueaderos(mapa, tipo)
+
+        build_zone("residente", "RESIDENTES")
+
         calle = ctk.CTkFrame(mapa, height=32, fg_color=COLORES["panel"], corner_radius=6)
         calle.pack(fill="x", padx=24, pady=12)
         ctk.CTkLabel(
@@ -79,15 +124,7 @@ class ParkingView(BaseView):
             text_color=COLORES["texto_3"],
         ).pack(expand=True)
 
-        # Visitantes Grid Header
-        ctk.CTkLabel(
-            mapa,
-            text="ZONA VISITANTES (V01 - V10)",
-            font=FONT["titulo_seccion"],
-            text_color=COLORES["texto_3"],
-        ).pack(anchor="w", padx=24, pady=(4, 4))
-
-        self._grid_parqueaderos(mapa, "visitante")
+        build_zone("visitante", "VISITANTES")
 
     def _grid_parqueaderos(self, parent, tipo: str):
         filas = obtener_parqueaderos_por_tipo(tipo)
@@ -98,13 +135,14 @@ class ParkingView(BaseView):
         for idx, row in enumerate(filas):
             col = idx % cols
             fila_idx = idx // cols
-            
-            # Premium real-world parking blueprint styling
+            num = row["numero"]
+
             if row["estado"] == "libre":
-                fg = "transparent"
-                border_col = COLORES["verde"]
-                border_w = 2
-                txt_col = COLORES["verde_brillante"]
+                is_selected = self.app._parking_selected == num
+                fg = COLORES["azul"] if is_selected else "transparent"
+                border_col = COLORES["azul"] if is_selected else COLORES["verde"]
+                border_w = 3 if is_selected else 2
+                txt_col = COLORES["boton_texto"] if is_selected else COLORES["verde_brillante"]
                 hover = COLORES["parking_hover"]
             else:
                 fg = COLORES["rojo"]
@@ -112,8 +150,8 @@ class ParkingView(BaseView):
                 border_w = 1
                 txt_col = COLORES["boton_texto"]
                 hover = COLORES["rojo_hover"]
-                
-            texto = row["numero"]
+
+            texto = num
 
             btn = ctk.CTkButton(
                 grid,
@@ -127,26 +165,74 @@ class ParkingView(BaseView):
                 hover_color=hover,
                 font=FONT["tabla_cabecera"],
                 text_color=txt_col,
-                command=lambda p=row["numero"], s=row["estado"], pl=row["placa"]: self._accion(p, s, pl),
+                command=lambda p=num, s=row["estado"], pl=row["placa"]: self._accion(p, s, pl),
             )
             btn.grid(row=fila_idx, column=col, padx=6, pady=6)
+            self._slot_btns[num] = btn
 
     def _accion(self, numero: str, estado: str, placa: str | None):
-        from CTkMessagebox import CTkMessagebox
-
         if estado == "ocupado":
+            from CTkMessagebox import CTkMessagebox
             msg = f"Parqueadero {numero}\nPlaca: {placa or '—'}\n\n¿Liberar?"
             res = CTkMessagebox(
                 title="Parqueadero ocupado", message=msg, icon="warning", option_1="Liberar", option_2="Cancelar"
             )
             if res.get() == "Liberar":
                 liberar_parqueadero(numero)
+                self.app._parking_selected = None
                 self.app._cambiar_pagina("Parqueaderos", self.app._ir_parqueaderos)
         else:
-            self.notificar("info", "Parqueadero libre", f"{numero} está disponible")
+            # Deselect previous slot
+            prev = self.app._parking_selected
+            if prev and prev in self._slot_btns:
+                self._slot_btns[prev].configure(
+                    fg_color="transparent",
+                    border_color=COLORES["verde"],
+                    border_width=2,
+                    text_color=COLORES["verde_brillante"],
+                )
+            # Toggle current slot
+            if prev == numero:
+                self.app._parking_selected = None
+                self._eliminar_btn.configure(state="disabled")
+            else:
+                self.app._parking_selected = numero
+                btn = self._slot_btns[numero]
+                btn.configure(
+                    fg_color=COLORES["azul"],
+                    border_color=COLORES["azul"],
+                    border_width=3,
+                    text_color=COLORES["boton_texto"],
+                )
+                self._eliminar_btn.configure(state="normal")
 
-    def _crear_asignacion(self):
-        sec = self.tarjeta(self)
+    def _agregar_espacio(self, tipo):
+        exito, msg = agregar_parqueadero(tipo)
+        self.notificar("ok" if exito else "aviso", "Parqueadero", msg)
+        if exito:
+            self.app._parking_selected = None
+            self.app._cambiar_pagina("Parqueaderos", self.app._ir_parqueaderos)
+
+    def _eliminar_seleccionado(self):
+        if not self.app._parking_selected:
+            return
+        from CTkMessagebox import CTkMessagebox
+        res = CTkMessagebox(
+            title="Eliminar parqueadero",
+            message=f"¿Eliminar {self.app._parking_selected}? Esta acción no se puede deshacer.",
+            icon="warning",
+            option_1="Eliminar",
+            option_2="Cancelar",
+        )
+        if res.get() == "Eliminar":
+            exito, msg = eliminar_parqueadero(self.app._parking_selected)
+            self.notificar("ok" if exito else "error", "Eliminar", msg)
+            self.app._parking_selected = None
+            if exito:
+                self.app._cambiar_pagina("Parqueaderos", self.app._ir_parqueaderos)
+
+    def _crear_asignacion(self, parent):
+        sec = self.tarjeta(parent)
         sec.pack(fill="x", padx=PAD_CARD_X, pady=PAD_BUTTON_ROW_Y)
         ctk.CTkLabel(
             sec,
@@ -158,7 +244,6 @@ class ParkingView(BaseView):
         fila = ctk.CTkFrame(sec, fg_color="transparent")
         fila.pack(fill="x", padx=20, pady=(0, 16))
 
-        # Vertical alignment for forms: label stack could be added but since this is inline, let's make it highly spacious
         self._park_placa = self.entrada(fila, placeholder="Placa del vehículo", width=220)
         self._park_placa.pack(side="left", padx=(0, 12))
 

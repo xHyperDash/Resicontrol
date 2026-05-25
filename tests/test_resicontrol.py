@@ -458,7 +458,7 @@ class TestModels:
         create_tables(temp_conn.cursor())
         temp_conn.commit()
         registrar_entrada_visitante("Carlos", "CC100", "ABC123", "301", "admin", conn=temp_conn)
-        ok, msg = editar_acceso(1, "Carlos Mod", "CC100", "ABC123", "admin", conn=temp_conn)
+        ok, msg = editar_acceso(1, "Carlos Mod", "CC100", "ABC123", "301", "admin", conn=temp_conn)
         assert ok is True
         assert temp_conn.execute("SELECT nombre FROM accesos WHERE id=1").fetchone()["nombre"] == "Carlos Mod"
         cerrar_conn(temp_conn)
