@@ -2,6 +2,8 @@ backups/
 qrs/
 logs/
 *.db
+*.db-shm
+*.db-wal
 __pycache__/
 build/
 dist/
