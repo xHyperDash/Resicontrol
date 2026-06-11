@@ -7,7 +7,7 @@ from config import BUSQUEDA_ENTRADA_ANCHO, TABLA_HISTORIAL_ALTURA, DIALOGO_ENTRA
 from config import BOTON_PEQUENO_ANCHO, BOTON_PEQUENO_ALTURA, RADIO_BOTON_PEQUENO, RADIO_PANEL
 from config import PAD_CARD_X, PAD_CARD_Y, PAD_LIST_BOTTOM
 from models import obtener_historial
-from report_generator import generar_csv
+from report_generator import generar_csv, generar_xlsx
 from qr_manager import abrir_archivo as abrir_archivo_qr
 
 
@@ -47,6 +47,9 @@ class HistoryView(BaseView):
         self.boton(filtros, "Filtrar", self._filtrar, width=120).pack(side="left")
         self.boton(
             filtros, "CSV", self._exportar_csv, width=100, color=COLORES["gris"]
+        ).pack(side="left", padx=(10, 0))
+        self.boton(
+            filtros, "XLSX", self._exportar_xlsx, width=100, color=COLORES["verde"], hover=COLORES["verde_hover"]
         ).pack(side="left", padx=(10, 0))
 
         self._crear_tabla()
@@ -144,6 +147,18 @@ class HistoryView(BaseView):
         if ok:
             abrir_archivo_qr(ruta)
         self.notificar("ok" if ok else "error", "Exportar CSV", ruta)
+
+    def _exportar_xlsx(self):
+        busq = self._hist_busq.get().strip()
+        tipo = self._hist_tipo.get()
+        if tipo == "Selecciona uno":
+            tipo = "Todos"
+        fecha_ini = "2020-01-01"
+        fecha_fin = datetime.now().strftime("%Y-%m-%d")
+        ok, ruta = generar_xlsx(fecha_ini, fecha_fin, tipo, busq)
+        if ok:
+            abrir_archivo_qr(ruta)
+        self.notificar("ok" if ok else "error", "Exportar XLSX", ruta)
 
     def _editar_dialog(self, datos: dict):
         dialog = ctk.CTkToplevel(self.app)

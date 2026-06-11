@@ -359,6 +359,14 @@ def obtener_parqueaderos_libres_visitante(conn=None):
     return [r["numero"] for r in rows]
 
 
+def obtener_parqueaderos_libres(conn=None):
+    real_conn, should_close = _ensure_conn(conn)
+    rows = real_conn.execute("SELECT numero FROM parqueaderos WHERE estado='libre' ORDER BY tipo, numero").fetchall()
+    if should_close:
+        real_conn.close()
+    return [r["numero"] for r in rows]
+
+
 def obtener_total_por_tipo(tipo, conn=None):
     real_conn, should_close = _ensure_conn(conn)
     count = real_conn.execute("SELECT COUNT(*) FROM parqueaderos WHERE tipo=?", (tipo,)).fetchone()[0]

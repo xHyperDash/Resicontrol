@@ -370,6 +370,8 @@ class ResidentsView(BaseView):
                     return
                 exito, msg = registrar_entrada_residente(placa, self.app.current_user)
                 self.notificar("ok" if exito else "error", "Entrada Residente", msg)
+                if exito:
+                    self._poblar_tabla_residentes(filtro=self._res_busqueda_var.get().strip())
                 return
 
         if not validate_required(nombre, "Nombre")[0]:
@@ -387,6 +389,8 @@ class ResidentsView(BaseView):
 
         exito, msg = registrar_entrada_visitante(nombre, cedula, placa, unidad, self.app.current_user)
         self.notificar("ok" if exito else "error", "Registro", msg)
+        if exito:
+            self._poblar_tabla_residentes(filtro=self._res_busqueda_var.get().strip())
 
     def _registrar_salida_rapida(self):
         cedula = self._entradas["Cédula *"].get().strip()
@@ -401,6 +405,8 @@ class ResidentsView(BaseView):
             if es_residente:
                 exito, msg = registrar_salida_residente(placa, self.app.current_user)
                 self.notificar("ok" if exito else "aviso", "Salida Residente", msg)
+                if exito:
+                    self._poblar_tabla_residentes(filtro=self._res_busqueda_var.get().strip())
                 return
 
         if not cedula and not placa:
@@ -409,6 +415,8 @@ class ResidentsView(BaseView):
 
         exito, msg = registrar_salida_visitante(cedula, placa, self.app.current_user)
         self.notificar("ok" if exito else "aviso", "Salida", msg)
+        if exito:
+            self._poblar_tabla_residentes(filtro=self._res_busqueda_var.get().strip())
 
     def _validar(self, unidad, nombre, cedula, placa, email, telefono):
         if not validate_unidad(unidad):
@@ -654,6 +662,9 @@ class ResidentsView(BaseView):
                 if res.get() != "Si, regenerar":
                     return
             ok, msg = generar_qr(placa)
+            if ok:
+                datos["qr_code"] = msg  # msg is the file path
+                self._renderizar_tabla()
             self.notificar("ok" if ok else "error", "QR" if ok else "Error", msg)
 
         fila_btns = ctk.CTkFrame(dialog, fg_color="transparent")

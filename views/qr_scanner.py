@@ -15,6 +15,21 @@ except ImportError:
     pass
 
 
+def escanear_qr(frame):
+    try:
+        from PIL import Image
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        pil_img = Image.fromarray(rgb)
+        decoded = pyzbar.decode(pil_img)
+        for obj in decoded:
+            data = obj.data.decode("utf-8").strip()
+            if data:
+                return data
+    except Exception:
+        pass
+    return None
+
+
 class QRScannerView(BaseView):
     """View for QR code scanning."""
 
@@ -38,8 +53,11 @@ class QRScannerView(BaseView):
             ).pack(pady=40)
             return
 
-        self.label_seccion(self, "Escaneo de Placa QR")
-        card = self.tarjeta(self)
+        scroll = ctk.CTkScrollableFrame(self, fg_color="transparent")
+        scroll.pack(fill="both", expand=True)
+
+        self.label_seccion(scroll, "Escaneo de Placa QR")
+        card = self.tarjeta(scroll)
         card.pack(fill="both", padx=PAD_CARD_X, pady=PAD_CARD_Y, expand=True)
 
         self.video_label = ctk.CTkLabel(
@@ -103,6 +121,9 @@ class QRScannerView(BaseView):
 
     def _detener(self):
         self.app._detener_camara()
+        if self.video_label:
+            self.video_label.configure(image="", text="Cámara detenida")
+            self.video_label.image = None
 
     def _mostrar_info_residente(self, placa: str):
         conn = sqlite3.connect(DB_PATH)

@@ -139,7 +139,7 @@ pip install -r requirements.txt
 4. Ejecuta la aplicación:
 
 ```bash
-python main.py
+python resicontrol.py
 ```
 
 ### Credenciales por defecto

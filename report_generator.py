@@ -114,6 +114,74 @@ def generar_csv(fecha_ini: str, fecha_fin: str, tipo: str, busq: str = "") -> tu
         return False, str(e)
 
 
+def generar_xlsx(fecha_ini: str, fecha_fin: str, tipo: str, busq: str = "") -> tuple[bool, str]:
+    """
+    Genera un archivo XLSX (Excel) de accesos entre dos fechas.
+    Retorna (éxito, ruta).
+    """
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+
+        filas = obtener_historial_between(fecha_ini, fecha_fin, tipo, busq)
+
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        nombre_xlsx = f"reporte_{fecha_ini}_a_{fecha_fin}_{ts}.xlsx"
+        ruta_xlsx = os.path.join(REPORTES_DIR, nombre_xlsx)
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Historial de Accesos"
+
+        encabezados = ["Tipo", "Nombre", "Cédula", "Placa", "Entrada", "Salida", "Operador"]
+        header_fill = PatternFill(start_color="1e3a5f", end_color="1e3a5f", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF", size=10)
+        thin_border = Border(
+            left=Side(style="thin", color="cbd5e1"),
+            right=Side(style="thin", color="cbd5e1"),
+            top=Side(style="thin", color="cbd5e1"),
+            bottom=Side(style="thin", color="cbd5e1"),
+        )
+
+        for ci, h in enumerate(encabezados, 1):
+            cell = ws.cell(row=1, column=ci, value=h)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal="center")
+            cell.border = thin_border
+
+        alt_fill = PatternFill(start_color="f1f5f9", end_color="f1f5f9", fill_type="solid")
+        for ri, row in enumerate(filas, 2):
+            for ci, v in enumerate(row, 1):
+                cell = ws.cell(row=ri, column=ci, value=str(v) if v is not None else "")
+                cell.font = Font(size=9)
+                cell.border = thin_border
+                if ri % 2 == 0:
+                    cell.fill = alt_fill
+
+        # Auto-adjust column widths
+        for col in ws.columns:
+            max_len = 0
+            for cell in col:
+                try:
+                    max_len = max(max_len, len(str(cell.value or "")))
+                except Exception:
+                    pass
+            ws.column_dimensions[col[0].column_letter].width = min(max_len + 3, 30)
+
+        wb.save(ruta_xlsx)
+        logger.info(f"XLSX generado: {nombre_xlsx} ({len(filas)} registros)")
+        return True, ruta_xlsx
+
+    except ImportError:
+        msg = "Librería openpyxl no instalada"
+        logger.warning(msg)
+        return False, msg
+    except Exception as e:
+        logger.error(f"Error generando XLSX: {e}")
+        return False, str(e)
+
+
 def obtener_historial_between(fecha_ini: str, fecha_fin: str, tipo: str, busq: str = "") -> list:
     """Obtiene historial filtrado por fechas, tipo y texto de búsqueda."""
     import sqlite3
