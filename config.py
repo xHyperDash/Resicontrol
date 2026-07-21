@@ -3,20 +3,23 @@ import sys
 
 # ─── Rutas base (funciona en .py y en .exe empaquetado) ───────────────────────
 if getattr(sys, 'frozen', False):
-    BASE_DIR = os.path.dirname(sys.executable)
+    BASE_DIR = os.path.join(os.environ.get('APPDATA', os.path.expanduser('~')), "ResiControl")
+    _EXE_DIR = os.path.dirname(sys.executable)
 else:
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+    _EXE_DIR = BASE_DIR
 
 # ─── Archivos ─────────────────────────────────────────────────────────────────
 DB_PATH = os.path.join(BASE_DIR, "resicontrol.db")
 
 # ─── Carpetas ─────────────────────────────────────────────────────────────────
-BACKUP_DIR = os.path.join(BASE_DIR, "backups")
-QR_DIR     = os.path.join(BASE_DIR, "qrs")
-LOG_DIR    = os.path.join(BASE_DIR, "logs")
-LOG_FILE   = os.path.join(LOG_DIR, "app.log")
+BACKUP_DIR   = os.path.join(BASE_DIR, "backups")
+QR_DIR       = os.path.join(BASE_DIR, "qrs")
+LOG_DIR      = os.path.join(BASE_DIR, "logs")
+LOG_FILE     = os.path.join(LOG_DIR, "app.log")
+REPORTES_DIR = os.path.join(BASE_DIR, "reportes")
 
-for directory in [BACKUP_DIR, QR_DIR, LOG_DIR]:
+for directory in [BACKUP_DIR, QR_DIR, LOG_DIR, REPORTES_DIR]:
     os.makedirs(directory, exist_ok=True)
 
 # ─── Parqueaderos ─────────────────────────────────────────────────────────────

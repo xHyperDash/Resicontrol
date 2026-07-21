@@ -11,13 +11,10 @@ from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 
-from config import DB_PATH, BASE_DIR
+from config import DB_PATH, REPORTES_DIR
 from models import obtener_historial
 from logger import logger
 
-
-REPORTES_DIR = os.path.join(BASE_DIR, "reportes")
-os.makedirs(REPORTES_DIR, exist_ok=True)
 
 
 def generar_pdf(fecha_ini: str, fecha_fin: str, tipo: str, usuario: str) -> tuple[bool, str]:

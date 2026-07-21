@@ -1,4 +1,8 @@
 # -*- mode: python ; coding: utf-8 -*-
+"""PyInstaller spec for ResiControl — onedir (folder) build."""
+
+import sys
+sys.setrecursionlimit(5000)
 
 block_cipher = None
 
@@ -6,25 +10,50 @@ a = Analysis(
     ['resicontrol.py'],
     pathex=[],
     binaries=[],
-    datas=[
-        ('resicontrol.db', '.'),
-        ('backups', 'backups'),
-        ('qrs', 'qrs'),
-        ('logs', 'logs'),
-    ],
+    datas=[],
     hiddenimports=[
+        # Core
         'bcrypt',
         'schedule',
+        'customtkinter',
+        'CTkMessagebox',
+        # Pillow
         'PIL',
         'PIL._imagingtk',
         'PIL.ImageTk',
-        'customtkinter',
+        'PIL.ImageFont',
+        # QR
+        'qrcode',
+        'pyzbar',
+        'pyzbar.pyzbar',
+        'cv2',
+        # Excel
+        'openpyxl',
+        'openpyxl.styles',
+        'openpyxl.cell',
+        'et_xmlfile',
+        # PDF
+        'reportlab',
+        'reportlab.lib.pagesizes',
+        'reportlab.lib.styles',
+        'reportlab.platypus',
+        # Charts
+        'matplotlib',
+        'matplotlib.backends.backend_agg',
+        'matplotlib.backends.backend_tkagg',
+        'matplotlib.figure',
+        # Fonts
         'fonttools',
     ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=[
+        'tkinter.test',
+        'unittest',
+        'pytest',
+        'test',
+    ],
     noarchive=False,
     optimize=0,
 )
@@ -50,4 +79,15 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+)
+
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    name='ResiControl',
 )
