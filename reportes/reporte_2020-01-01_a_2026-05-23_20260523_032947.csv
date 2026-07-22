@@ -1,9 +1,0 @@
-Tipo,Nombre,Cédula,Placa,Entrada,Salida,Operador
-visitante,Asignacion directa,,SDF908,2026-05-23 02:12:02,,admin
-visitante,Juan Benito,654123987,QWE456,2026-05-23 01:50:29,,admin
-visitante,Diego,123654789,SDF908,2026-05-23 01:36:36,,admin
-visitante,Carlos,CC100,ABC123,2026-05-13 17:05:53,,admin
-visitante,Kelly,None,XYZ789,2026-05-13 17:05:41,,admin
-visitante,Ana,CC999,V01,2026-05-13 17:05:40,2026-05-13 17:05:40,admin
-visitante,Adrian,CC123,ABC123,2026-05-13 17:05:40,,admin
-visitante,Carlos López,CC1234567890,DEF456,2026-05-13 17:05:40,,admin
