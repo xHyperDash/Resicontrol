@@ -12,13 +12,14 @@ ResiControl está diseñado para simplificar la operación diaria de seguridad e
 
 ### Funcionalidades principales
 
-- Gestión de residentes y visitantes.
-- Control de acceso y salida con trazabilidad.
-- Gestión visual de parqueaderos.
-- Historial de eventos con filtros y exportación.
+- Gestión de residentes y visitantes con entrada/salida.
+- Control de acceso con trazabilidad y detección de duplicados.
+- Gestión visual de parqueaderos con modo edición (agregar/quitar en lote).
+- Historial de eventos con filtros y exportación CSV/XLSX.
 - Registro de incidentes y alertas.
-- Generación de reportes PDF y CSV.
-- Escaneo de códigos QR para identificación rápida.
+- Generación de reportes PDF, CSV y XLSX.
+- Escaneo de códigos QR con registro automático de entrada.
+- Dashboard con gráficos en tiempo real (matplotlib).
 - Backups automáticos y restauración desde la interfaz.
 - Gestión de usuarios con roles administrativos.
 
@@ -45,45 +46,43 @@ El proyecto sigue una arquitectura modular, con separación clara de responsabil
 ```text
 ResiControl/
 │
-├── main.py                       Punto de entrada
-├── resicontrol.py                Aplicación principal (CustomTkinter)
-├── config.py                     Definición centralizada de temas y estilos
-├── icons.py                      Generación de iconos vectoriales
-├── logger.py                     Registro de eventos con rotación
-├── auth.py                       Autenticación, bloqueo y validación de credenciales
-├── validators.py                 Validación de campos de entrada
-├── database.py                   Inicialización, esquema y seed de la base de datos
+├── resicontrol.py                Punto de entrada
+├── config.py                     Configuración y constantes
+├── database.py                   Inicialización y esquema de BD
 ├── models.py                     Capa de datos y operaciones CRUD
-├── backup.py                     Backups diarios y manuales
-├── qr_manager.py                 Generación y lectura de códigos QR
-├── report_generator.py           Generación de reportes PDF y CSV
+├── auth.py                       Autenticación y validación
+├── validators.py                 Validación de campos
+├── icons.py                      Generación de iconos vectoriales
+├── logger.py                     Registro de eventos
+├── backup.py                     Backups automáticos
+├── qr_manager.py                 Generación y lectura de QR
+├── report_generator.py           Reportes PDF, CSV y XLSX
 │
 ├── views/                        Módulos de interfaz gráfica
-│   ├── base.py                    Componentes reutilizables
-│   ├── navigation.py              Navegación lateral
-│   ├── dashboard.py               Métricas y accesos rápidos
-│   ├── residents.py               Gestión de residentes
-│   ├── visitors.py                Registro de visitantes
-│   ├── parking.py                 Gestión de parqueaderos
-│   ├── history.py                 Historial de accesos
-│   ├── incidents.py               Registro de incidentes
-│   ├── reports.py                 Reportes PDF
-│   ├── backup.py                  Respaldos
-│   ├── users.py                   Administración de usuarios
-│   ├── qr_scanner.py              Escaneo QR
-│   ├── table.py                   Tabla reutilizable
-│   └── toast.py                   Notificaciones no bloqueantes
+│   ├── base.py                   Componentes base reutilizables
+│   ├── navigation.py             Navegación lateral
+│   ├── dashboard.py              Dashboard con gráficos
+│   ├── residents.py              Gestión de residentes
+│   ├── visitors.py               Registro de visitantes
+│   ├── parking.py                Gestión de parqueaderos
+│   ├── history.py                Historial de accesos
+│   ├── incidents.py              Incidentes
+│   ├── reports.py                Reportes
+│   ├── backup.py                 Respaldos
+│   ├── users.py                  Administración de usuarios
+│   ├── qr_scanner.py             Escaneo QR
+│   ├── table.py                  Tabla reutilizable
+│   └── toast.py                  Notificaciones toast
 │
 ├── tests/                        Pruebas automatizadas
-├── backups/                      Respaldos generados
-├── qrs/                          Códigos QR generados
-├── reportes/                     Reportes CSV y PDF generados
-├── logs/                         Archivos de log
-├── resicontrol.db                Base de datos SQLite
+├── seed_test_data.py             Datos de prueba idempotentes
+├── er_diagram.png                Diagrama entidad-relación
+├── ResiControl_ER.gv             Fuente del diagrama ER
 ├── requirements.txt              Dependencias del proyecto
-├── mypy.ini                      Configuración de type checking
+├── mypy.ini                      Configuración de mypy
 ├── ResiControl.spec              Configuración de PyInstaller
-└── README.md                     Documentación del proyecto
+├── setup.iss                     Script de Inno Setup
+└── README.md                     Documentación
 ```
 
 ### Flujo de datos
@@ -106,7 +105,7 @@ Sidebar / accesos rápidos → _cambiar_pagina() → reemplazo de la vista actua
 
 ### Requisitos previos
 
-- Python 3.10 o superior
+- Python 3.11 o superior
 - `pip`
 
 ### Pasos
@@ -136,7 +135,13 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-4. Ejecuta la aplicación:
+4. (Opcional) Puebla la base de datos con datos de demostración:
+
+```bash
+python seed_test_data.py
+```
+
+5. Ejecuta la aplicación:
 
 ```bash
 python resicontrol.py
@@ -169,7 +174,14 @@ python resicontrol.py
 1. Accede al módulo **Escaneo QR**.
 2. Presiona **Iniciar escaneo**.
 3. Coloca el código QR frente a la cámara.
-4. El sistema identifica el residente y muestra la información asociada.
+4. El sistema identifica al residente y registra automáticamente la entrada (o muestra advertencia si ya está dentro).
+
+### Parqueaderos — Modo edición
+
+1. Presiona **Editar** para activar el modo edición.
+2. Selecciona espacios libres (resaltados en verde claro) para agregar/quitar.
+3. Usa el panel de agregado masivo para crear varios espacios de golpe.
+4. Presiona **Guardar cambios de edición** para confirmar.
 
 ---
 
@@ -192,21 +204,37 @@ Las dependencias principales del proyecto son:
 | `pytest-cov` | `>=4.0` | Cobertura de pruebas |
 | `mypy` | `>=1.0` | Verificación estática de tipos |
 | `matplotlib` | `>=3.7` | Gráficos en el dashboard |
+| `openpyxl` | `>=3.1` | Exportación a Excel XLSX |
+| `graphviz` | `>=0.20` | Diagrama entidad-relación |
 
 ---
 
 ## Empaquetado
 
-Para generar el ejecutable de Windows:
+### Ejecutable portátil (PyInstaller)
 
 ```bash
 pip install pyinstaller
 pyinstaller ResiControl.spec
 ```
 
-El ejecutable se generará en `dist/ResiControl.exe`.
+El ejecutable se generará en `dist/ResiControl/ResiControl.exe`.
 
-> Las carpetas `backups/`, `qrs/` y `logs/` se crean automáticamente cuando la aplicación se ejecuta por primera vez.
+### Instalador de Windows (Inno Setup)
+
+Requiere [Inno Setup 6+](https://jrsoftware.org/isdl.php).
+
+```bash
+iscc setup.iss
+```
+
+El instalador se genera en `installer/ResiControl_v2.3.0_Setup.exe`.
+
+### Modo empaquetado
+
+Cuando se ejecuta desde el instalador, la aplicación almacena automáticamente los datos en `%APPDATA%\ResiControl\` (backups, QR, reportes, logs). En modo fuente, los datos se guardan junto al proyecto.
+
+> Las carpetas `backups/`, `qrs/`, `logs/`, `reportes/` se crean automáticamente al iniciar la aplicación por primera vez.
 
 ---
 
@@ -217,6 +245,8 @@ El ejecutable se generará en `dist/ResiControl.exe`.
 ```bash
 pytest tests/ -v
 ```
+
+> **52 tests** — todos pasando.
 
 ### Ejecutar con cobertura
 
@@ -234,7 +264,7 @@ pytest tests/ -v --cov=models --cov=auth --cov=validators --cov=backup --cov=rep
 | `models.py` | CRUD de usuarios, residentes, visitantes, accesos, incidentes, parqueaderos y métricas |
 | `qr_manager.py` | Generación y escaneo de QR |
 | `backup.py` | Creación y listado de backups |
-| `report_generator.py` | Generación de CSV y PDF |
+| `report_generator.py` | Generación de CSV, PDF y XLSX |
 
 ---
 
@@ -242,17 +272,11 @@ pytest tests/ -v --cov=models --cov=auth --cov=validators --cov=backup --cov=rep
 
 El proyecto utiliza **mypy** para la verificación estática de tipos.
 
-### Verificación
-
 ```bash
 mypy .
 ```
 
-### Configuración relevante
-
-- **Python:** 3.11
-- **Advertencias sobre return types faltantes:** activadas
-- **Funciones sin tipado:** permitidas por compatibilidad retroactiva
+> **Estado actual:** `Success: no issues found in 28 source files` — 0 errores, 0 advertencias.
 
 ---
 
@@ -275,22 +299,33 @@ Si deseas colaborar en el proyecto:
 - Gráficos interactivos en el dashboard (matplotlib).
 - Tablas con columnas de ancho fijo para alineación perfecta.
 - Generación de QR desde el diálogo de edición de residentes.
-- Vistas con scroll en formularios largos (visitantes, residentes, usuarios).
+- Vistas con scroll en formularios largos.
 - Sidebar sin frames envolventes (espaciado compacto y preciso).
-- Exportación CSV fiable con filtros y rutas absolutas.
+- Exportación CSV, PDF y XLSX con filtros y rutas absolutas.
 - Backups automáticos diarios.
 - Índices en la base de datos.
 - Validación de formularios.
-- Tests automatizados.
+- Tests automatizados (52 tests, 0 mypy errores).
 - Logging y auditoría.
+- Dashboard con 3 gráficos en tiempo real (entradas por hora, incidentes, dentro ahora).
+- Escaneo QR con registro automático de entrada.
+- Modo edición de parqueaderos (agregar/quitar en lote).
+- Calendario para selección de fechas en reportes.
+- Confirmación antes de cerrar sesión.
+- Empaquetado con PyInstaller + Inno Setup.
+- Almacenamiento en `%APPDATA%` en modo instalado.
+- Entrada rápida para residentes desde el mismo módulo.
+- Prevención de entradas duplicadas.
+- Diagrama entidad-relación generado con Graphviz.
+- Datos de prueba idempotentes (`seed_test_data.py`).
 
 ### Próximas mejoras
 
 - Migración a PostgreSQL.
-- Exportación a Excel.
 - Login persistente.
 - Modo claro/oscuro.
 - Persistencia de bloqueo de usuarios en base de datos.
+- Notificaciones en tiempo real.
 
 ---
 
